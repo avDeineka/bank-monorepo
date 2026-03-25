@@ -1,0 +1,43 @@
+﻿{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Gateway",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start:dev", "--", "gateway", "--debug"],
+      "sourceMaps": true,
+      "console": "integratedTerminal",
+      "restart": true
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Accounts",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start:dev", "--", "accounts", "--debug"],
+      "port": 9230,
+      "sourceMaps": true,
+      "console": "integratedTerminal",
+      "restart": true
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Logger",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start:dev", "--", "logger", "--debug"],
+      "port": 9231,
+      "sourceMaps": true,
+      "console": "integratedTerminal",
+      "restart": true
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug All Services",
+      "configurations": ["Debug Gateway", "Debug Accounts", "Debug Logger"]
+    }
+  ]
+}
