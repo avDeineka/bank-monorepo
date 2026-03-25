@@ -2,6 +2,7 @@
 import { Injectable, Inject, InternalServerErrorException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Knex } from 'knex';
+import { TransferDto } from '@app/common';
 
 @Injectable()
 export class AccountsService {
@@ -17,7 +18,8 @@ export class AccountsService {
     return { balance: account.balance, currency: account.currency };
   }
   
-  async transferMoney(fromUserId: number, toUserId: number, amount: number) {
+  async transferMoney(data: TransferDto) {
+    let { fromUserId, toUserId, amount } = data;
     try {
       if (amount <= 0) {
         await this.logFailure(fromUserId, toUserId, amount, 'INVALID_AMOUNT');
