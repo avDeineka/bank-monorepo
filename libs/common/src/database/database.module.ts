@@ -9,8 +9,8 @@ import { knex } from 'knex';
       provide: 'KNEX_CONNECTION',
       useValue: knex({
         client: 'pg',
-        connection: {
-          host: '127.0.0.1',
+        connection: process.env.DATABASE_URL || {
+          host: process.env.DB_HOST || '127.0.0.1',
           user: 'postgres',
           password: 'QweAsd234',
           database: 'postgres',

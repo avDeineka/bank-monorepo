@@ -9,7 +9,7 @@ export class LoggerController {
 
   @EventPattern({ cmd: 'log_event' }) // Використовуємо EventPattern для .emit()
   async handleLogEvent(@Payload() data: any) {
-    console.log('📝 Нова подія для логування:', data.event);
+    console.log('📝 New logging event:', data.event);
 
     try {
       await this.knex('audit_logs').insert({
@@ -19,7 +19,7 @@ export class LoggerController {
         created_at: new Date()
       });
     } catch (error) {
-      console.error('❌ Помилка запису логу:', error.message);
+      console.error('❌ Log recording error:', error.message);
     }
   }
 }

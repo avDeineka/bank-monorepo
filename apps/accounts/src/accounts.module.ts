@@ -14,7 +14,7 @@ import { DatabaseModule } from '@app/common';
         name: 'LOGGER_SERVICE', // Ця назва буде використовуватись в @Inject() у сервісі
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: process.env.LOGGER_HOST || '127.0.0.1',
           port: 3002, // Порт слухає наш Logger
         },
       },

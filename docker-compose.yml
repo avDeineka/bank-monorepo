@@ -1,0 +1,62 @@
+﻿version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: bank_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+
+  gateway:
+    build:
+      context: .
+      args:
+        APP_NAME: gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - accounts
+      - logger
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/bank_db
+      - DB_HOST=db
+      - ACCOUNTS_HOST=accounts
+      - LOGGER_HOST=logger
+
+  accounts:
+    build:
+      context: .
+      args:
+        APP_NAME: accounts
+    ports:
+      - "3001:3001"
+    depends_on:
+      - db
+      - logger
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/bank_db
+      - DB_HOST=db
+      - LOGGER_HOST=logger
+
+  logger:
+    build:
+      context: .
+      args:
+        APP_NAME: logger
+    ports:
+      - "3002:3002"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/bank_db
+      - DB_HOST=db
+
+volumes:
+  postgres_data:

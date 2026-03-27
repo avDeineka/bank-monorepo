@@ -10,7 +10,7 @@ import { PaymentsController } from './payments.controller';
         name: 'ACCOUNTS_SERVICE', // Ім'я, за яким ми будемо звертатися
         transport: Transport.TCP,
         options: {
-          host: '127.0.0.1',
+          host: process.env.ACCOUNTS_HOST || '127.0.0.1',
           port: 3001, // мікросервіс account слухатиме тут
         },
       },
