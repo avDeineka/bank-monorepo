@@ -7,15 +7,17 @@ import { knex } from 'knex';
   providers: [
     {
       provide: 'KNEX_CONNECTION',
-      useValue: knex({
-        client: 'pg',
-        connection: process.env.DATABASE_URL || {
-          host: process.env.DB_HOST || '127.0.0.1',
-          user: 'postgres',
-          password: 'QweAsd234',
-          database: 'postgres',
-        },
-      }),
+      // Використовуємо useFactory для асинхронної ініціалізації
+      useFactory: () => {
+        const url = process.env.DATABASE_URL;
+        if (!url) {
+          console.error('DATABASE_URL is missing!');
+        }
+        return knex({
+          client: 'pg',
+          connection: url,
+        });
+      },
     },
   ],
   exports: ['KNEX_CONNECTION'],

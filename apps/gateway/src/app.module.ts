@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from '@app/common';
@@ -8,6 +9,10 @@ import { PaymentsModule } from "./gateway/payments.module";
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,             // Робить змінні доступними у всіх модулях без імпорту
+      envFilePath: '.env',        // За замовчуванням шукає в корені CWD
+    }),
     DatabaseModule,
     UsersModule,
     AuthModule,
