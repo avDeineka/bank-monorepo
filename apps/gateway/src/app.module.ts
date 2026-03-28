@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -6,6 +6,7 @@ import { DatabaseModule } from '@app/common';
 import { UsersModule } from './users.module';
 import { AuthModule } from './auth.module';
 import { PaymentsModule } from "./gateway/payments.module";
+import { HttpLoggerMiddleware } from './middleware/logger.middleware';
 
 @Module({
   imports: [
@@ -21,4 +22,11 @@ import { PaymentsModule } from "./gateway/payments.module";
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(HttpLoggerMiddleware)
+      .forRoutes('*'); // Застосувати до всіх ендпоїнтів
+  }
+}
+
