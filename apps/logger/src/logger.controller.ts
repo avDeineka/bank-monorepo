@@ -2,12 +2,13 @@
 import { Controller, Inject } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { Knex } from 'knex';
+import { PATTERNS } from '@app/common';
 
 @Controller()
 export class LoggerController {
   constructor(@Inject('KNEX_CONNECTION') private readonly knex: Knex) {}
 
-  @EventPattern({ cmd: 'log_event' }) // Використовуємо EventPattern для .emit()
+  @EventPattern({ cmd: PATTERNS.LOGGER.LOG_EVENT }) // Використовуємо EventPattern для .emit()
   async handleLogEvent(@Payload() data: any) {
     console.log('📝 New logging event:', data.event);
 

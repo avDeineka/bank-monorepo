@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AccountsController } from './accounts.controller';
 import { AccountsService } from './accounts.service';
 import { DatabaseModule } from '@app/common';
+import { SERVICES } from '@app/common';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { DatabaseModule } from '@app/common';
     // Реєструємо клієнта для зв'язку з мікросервісом логів
     ClientsModule.register([
       {
-        name: 'LOGGER_SERVICE', // Ця назва буде використовуватись в @Inject() у сервісі
+        name: SERVICES.LOGGER, // Ця назва буде використовуватись в @Inject() у сервісі
         transport: Transport.TCP,
         options: {
           host: process.env.LOGGER_HOST || '127.0.0.1',

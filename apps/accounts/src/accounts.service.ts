@@ -3,13 +3,14 @@ import { Injectable, Inject, InternalServerErrorException } from '@nestjs/common
 import { ClientProxy } from '@nestjs/microservices';
 import { Knex } from 'knex';
 import { TransferDto } from '@app/common';
+import { SERVICES, PATTERNS } from '@app/common';
 
 @Injectable()
 export class AccountsService {
   constructor(
     @Inject('KNEX_CONNECTION') private readonly knex: Knex,
     // Цей рядок ОБОV'ЯЗКОВО має бути тут:
-    @Inject('LOGGER_SERVICE') private readonly loggerClient: ClientProxy,
+    @Inject(SERVICES.LOGGER) private readonly loggerClient: ClientProxy,
   ) { }
 
   async getBalance(userId: number) {
@@ -23,7 +24,7 @@ export class AccountsService {
     try {
       if (amount <= 0) {
         await this.logFailure(fromUserId, toUserId, amount, 'INVALID_AMOUNT');
-        throw new Error('Сума має бути більшою за нуль');
+        throw new Error('The amount must be greater than zero');
       }
       await this.knex.transaction(async (trx) => {
         // 1. Блокуємо та перевіряємо відправника
@@ -33,7 +34,7 @@ export class AccountsService {
           .forUpdate();
 
         if (!sender || sender.balance < amount) {
-          throw new Error('Недостатньо коштів або рахунок не знайдено');
+          throw new Error('Insufficient funds or account not found');
         }
 
         // 2. Знімаємо
@@ -47,7 +48,7 @@ export class AccountsService {
           .first();
 
         if (!recipient) {
-          throw new Error('Отримувача не знайдено');
+          throw new Error('Recipient not found');
         }
 
         // 4. Додаємо
@@ -56,13 +57,14 @@ export class AccountsService {
           .increment('balance', amount);
       });
       
-      this.loggerClient.emit({ cmd: 'log_event' }, {
+      this.loggerClient.emit({ cmd: PATTERNS.LOGGER.LOG_EVENT }, {
         service: 'accounts',
         event: 'TRANSFER_COMPLETED',
         payload: { from: fromUserId, to: toUserId, amount, status: 'success' }
       });
 
-      return { status: 'success', message: 'Гроші успішно переказано' };
+      return {
+        status: 'success', message: 'Money transferred successfully' };
     } catch (error) {
       await this.logFailure (fromUserId, toUserId, amount, error.message);
       return { status: 'error', message: error.message };
@@ -71,7 +73,7 @@ export class AccountsService {
 
   // Допоміжний метод для чистоти коду
   private async logFailure(from: number, to: number, amount: number, reason: string) {
-    this.loggerClient.emit({ cmd: 'log_event' }, {
+    this.loggerClient.emit({ cmd: PATTERNS.LOGGER.LOG_EVENT }, {
       service: 'accounts',
       event: 'TRANSFER_FAILED',
       payload: { from, to, amount, reason, timestamp: new Date() }

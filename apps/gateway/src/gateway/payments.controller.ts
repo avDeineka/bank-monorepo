@@ -3,22 +3,23 @@ import { Controller, Get, Post, Body, Inject, UseGuards, Req } from '@nestjs/com
 import { ClientProxy } from '@nestjs/microservices';
 import { AuthGuard } from '@nestjs/passport';
 import { TransferDto } from '@app/common';
+import { SERVICES, PATTERNS } from '@app/common';
 
 @Controller('payments')
 export class PaymentsController {
   constructor(
-    @Inject('ACCOUNTS_SERVICE') private client: ClientProxy,
+    @Inject(SERVICES.ACCOUNTS) private client: ClientProxy,
   ) {}
 
-  @Get('test-tcp')
+  @Get('ping')
   testTcp() {
-    return this.client.send({ cmd: 'ping' }, { hello: 'from gateway' });
+    return this.client.send({ cmd: PATTERNS.ACCOUNTS.PING }, { hello: 'from gateway' });
   }
   
   @UseGuards(AuthGuard('jwt'))
-  @Get('my-balance')
+  @Get('balance')
   async getMyBalance(@Req() req) {
-    return this.client.send({ cmd: 'get_balance' }, { userId: req.user.userId });
+    return this.client.send({ cmd: PATTERNS.ACCOUNTS.GET_BALANCE }, { userId: req.user.userId });
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -29,6 +30,6 @@ export class PaymentsController {
   ) {
     const fromUserId = req.user.userId;
     const fullData: TransferDto = { ...body, fromUserId };
-    return this.client.send({ cmd: 'do_transfer' }, fullData);
+    return this.client.send({ cmd: PATTERNS.ACCOUNTS.DO_TRANSFER }, fullData);
   }
 }

@@ -3,22 +3,23 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { TransferDto } from '@app/common';
 import { AccountsService } from './accounts.service';
+import { PATTERNS } from '@app/common';
 
 @Controller()
 export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
 
-  @MessagePattern({ cmd: 'ping' })
+  @MessagePattern({ cmd: PATTERNS.ACCOUNTS.PING })
   ping(@Payload() data: any) {
     return { status: 'ok', pong: true };
   }
 
-  @MessagePattern({ cmd: 'get_balance' })
+  @MessagePattern({ cmd: PATTERNS.ACCOUNTS.GET_BALANCE })
   async get_balance(@Payload() data: { userId: number }) {
     return this.accountsService.getBalance (data.userId);
   }
 
-  @MessagePattern({ cmd: 'do_transfer' })
+  @MessagePattern({ cmd: PATTERNS.ACCOUNTS.DO_TRANSFER })
   async handleTransfer(@Payload() data: TransferDto) {
     return this.accountsService.transferMoney (data);
   }
