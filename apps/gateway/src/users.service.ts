@@ -13,11 +13,11 @@ export class UsersService {
   ) { }
 
   async findAll() {
-    return await this.knex("users").select('id','name','email');
+    return await this.knex("users").select('id','email');
   }
 
   async getUserById(id: number) {
-    return await this.knex("users").first('id','name','email').where({ id });
+    return await this.knex("users").first('id','email').where({ id });
   }
 
   async findByEmail(email: string) {

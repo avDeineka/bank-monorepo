@@ -1,9 +1,21 @@
 ﻿-- Створюємо таблицю Users (identity)
 CREATE TABLE IF NOT EXISTS public.users (
     id SERIAL PRIMARY KEY,
-    name character varying NOT NULL,
     email character varying NOT NULL UNIQUE,
     password character varying
+);
+
+CREATE TABLE IF NOT EXISTS profiles (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER UNIQUE NOT NULL, -- Зв'язок з таблицею users (Auth)
+    name VARCHAR(255) NOT NULL,      -- Повне ім'я (Full Name)
+    phone VARCHAR(20),               -- Для верифікації або контактів
+    avatar_url TEXT,                 -- Посилання на фото профілю (на майбутнє для S3)
+    bio TEXT,                        -- Коротка інформація (опціонально)
+    preferred_currency VARCHAR(3) DEFAULT 'USD', -- Важливо для банку!
+    last_active_at TIMESTAMP,        -- Для аналітики, коли юзер востаннє заходив
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Створюємо таблицю Accounts (finances)

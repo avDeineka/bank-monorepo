@@ -63,8 +63,7 @@ export class AccountsService {
         payload: { from: fromUserId, to: toUserId, amount, status: 'success' }
       });
 
-      return {
-        status: 'success', message: 'Money transferred successfully' };
+      return { status: 'success', message: 'Money transferred' };
     } catch (error) {
       await this.logFailure (fromUserId, toUserId, amount, error.message);
       return { status: 'error', message: error.message };

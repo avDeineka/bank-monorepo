@@ -7,11 +7,12 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(configService: ConfigService) {
+    const secret = configService.get<string>('JWT_SECRET');
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       // Використовуємо сервіс замість прямого звернення до процесу
-      secretOrKey: configService.get<string>('JWT_SECRET') || 'fallback_secret_key',
+      secretOrKey: secret as string
     });
   }
 

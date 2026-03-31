@@ -1,16 +1,18 @@
-﻿// accounts/main.ts
+﻿// logger//main.ts
 import { NestFactory } from "@nestjs/core";
 import { MicroserviceOptions, Transport } from "@nestjs/microservices";
+import { RABBIT_CONFIG } from '@app/common';
 import { LoggerModule } from "./logger.module";
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     LoggerModule,
     {
-      transport: Transport.TCP,
+      transport: Transport.RMQ,
       options: {
-        host: '0.0.0.0', // process.env.LOGGER_HOST || "127.0.0.1",
-        port: 3002,
+          urls: [ RABBIT_CONFIG.URL ],
+          queue: RABBIT_CONFIG.LOGGER_QUEUE,
+          queueOptions: { durable: false }
       },
     },
   );

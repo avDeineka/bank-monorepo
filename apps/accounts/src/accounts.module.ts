@@ -5,7 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AccountsController } from './accounts.controller';
 import { AccountsService } from './accounts.service';
 import { DatabaseModule } from '@app/common';
-import { SERVICES } from '@app/common';
+import { SERVICES, RABBIT_CONFIG } from '@app/common';
 
 @Module({
   imports: [
@@ -17,11 +17,12 @@ import { SERVICES } from '@app/common';
     // Реєструємо клієнта для зв'язку з мікросервісом логів
     ClientsModule.register([
       {
-        name: SERVICES.LOGGER, // Ця назва буде використовуватись в @Inject() у сервісі
-        transport: Transport.TCP,
+        name: SERVICES.LOGGER,
+        transport: Transport.RMQ,
         options: {
-          host: process.env.LOGGER_HOST || '127.0.0.1',
-          port: 3002, // Порт слухає наш Logger
+          urls: [ RABBIT_CONFIG.URL ],
+          queue: RABBIT_CONFIG.LOGGER_QUEUE,
+          queueOptions: { durable: false }
         },
       },
     ]),

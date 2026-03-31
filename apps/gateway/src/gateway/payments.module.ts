@@ -1,18 +1,19 @@
 ﻿// gateway/payments.module.ts
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { SERVICES } from '@app/common';
+import { SERVICES, RABBIT_CONFIG } from '@app/common';
 import { PaymentsController } from './payments.controller';
 
 @Module({
   imports: [
     ClientsModule.register([
       {
-        name: SERVICES.ACCOUNTS, // Ім'я, за яким ми будемо звертатися
-        transport: Transport.TCP,
+        name: SERVICES.ACCOUNTS,
+        transport: Transport.RMQ,
         options: {
-          host: process.env.ACCOUNTS_HOST || '127.0.0.1',
-          port: 3001, // мікросервіс account слухатиме тут
+          urls: [RABBIT_CONFIG.URL],
+          queue: RABBIT_CONFIG.ACCOUNTS_QUEUE,
+          queueOptions: { durable: false }
         },
       },
     ]),

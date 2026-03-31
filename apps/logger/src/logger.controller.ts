@@ -8,7 +8,7 @@ import { PATTERNS } from '@app/common';
 export class LoggerController {
   constructor(@Inject('KNEX_CONNECTION') private readonly knex: Knex) {}
 
-  @EventPattern({ cmd: PATTERNS.LOGGER.LOG_EVENT }) // Використовуємо EventPattern для .emit()
+  @EventPattern({ cmd: PATTERNS.LOGGER.LOG_EVENT }) // EventPattern для .emit()
   async handleLogEvent(@Payload() data: any) {
     console.log('📝 New logging event:', data.event);
 
