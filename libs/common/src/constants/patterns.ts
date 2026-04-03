@@ -2,6 +2,7 @@
 export const PATTERNS = {
   ACCOUNTS: {
     PING: 'accounts.ping',
+    CREATE_PROFILE: 'accounts.create_profile',
     GET_BALANCE: 'accounts.get_balance',
     CREATE: 'accounts.create',
     GET_ALL: 'accounts.get_all',

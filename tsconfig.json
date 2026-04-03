@@ -22,12 +22,38 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
+      "@app/common": ["libs/common/src/index"],
+      "@app/common/*": ["libs/common/src/*"]
+    },
+    "ignoreDeprecations": "5.0"
+  }
+}
+
+/*{
+  "compilerOptions": {
+    "module": "CommonJS", // NestJS під капотом найкраще працює з CommonJS або ESNext
+    "moduleResolution": "node", // "node" (або "Bundler") набагато стабільніші для аліасів @app
+    "target": "ES2023",
+    "lib": [
+      "es2023"
+    ],
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": "./", // Поверніть його, поки ми в 2026-му, це серце Nest монорепозиторію
+    "paths": {
       "@app/common": [
         "libs/common/src"
       ],
       "@app/common/*": [
         "libs/common/src/*"
       ]
-    }
+    },
+    "outDir": "./dist",
+    "skipLibCheck": true,
+    "strict": false,
+    "ignoreDeprecations": "5.0"
   }
 }
+*/

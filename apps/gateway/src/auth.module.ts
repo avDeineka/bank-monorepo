@@ -3,14 +3,15 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { SERVICES, RABBIT_CONFIG } from '@app/common';
+import { RmqModule } from '@app/common';
+import { JwtStrategy } from './jwt.strategy';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from './users.module'; // Щоб шукати юзера
-import { JwtStrategy } from './jwt.strategy';
 
 @Module({
   imports: [
-    UsersModule,
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -19,6 +20,8 @@ import { JwtStrategy } from './jwt.strategy';
         signOptions: { expiresIn: '1h' },
       }),
     }),
+    RmqModule.register(SERVICES.LOGGER, RABBIT_CONFIG.LOGGER_QUEUE),
+    UsersModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

@@ -23,7 +23,7 @@ export class UsersController {
     return this.usersService.getUserById(id);
   }
 
-  @Post('register') // Можна змінити шлях для ясності
+  @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
     return await this.usersService.create(createUserDto);
   }

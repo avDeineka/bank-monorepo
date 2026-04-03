@@ -1,15 +1,19 @@
 ﻿// users.service.ts
-import { Injectable, Inject } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Knex } from 'knex';
+import { Injectable, Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { CreateUserDto } from './dto/create-user.dto';
+import { SERVICES, PATTERNS } from '@app/common';
 
 @Injectable()
 export class UsersService {
 
   constructor(
     @Inject('KNEX_CONNECTION')
-    private readonly knex: Knex
+    private readonly knex: Knex,
+    
+    @Inject(SERVICES.ACCOUNTS) private accountsClient: ClientProxy,
   ) { }
 
   async findAll() {
@@ -24,8 +28,8 @@ export class UsersService {
     return await this.knex('users').where({ email }).first(); // including a password !
   }
 
-  async create(createUserDto: CreateUserDto) {
-    const { password, ...userData } = createUserDto;
+  async create (dto: CreateUserDto) {
+    const { email, password, ...userData } = dto;
 
     // 1. Хешуємо пароль. 10 — це кількість раундів солі (salt rounds)
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -34,11 +38,17 @@ export class UsersService {
     // .returning('*') важливо для PostgreSQL, щоб отримати створеного юзера
     const [newUser] = await this.knex('users')
       .insert({
-        ...userData,
+        email,
         password: hashedPassword,
       })
-      .returning(['id', 'name', 'email']); // Повертаємо все, КРІМ пароля
+      .returning(['id', 'email']); // Повертаємо все, КРІМ пароля
 
+    this.accountsClient.emit(PATTERNS.ACCOUNTS.CREATE_PROFILE, {
+      userId: newUser.id,
+      name: dto.name,
+      phone: dto.phone,
+      preferred_currency: dto.preferred_currency
+    });
     return newUser;
   }
 }

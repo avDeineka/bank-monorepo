@@ -1,6 +1,6 @@
 ﻿// accounts/src/accounts.controller.ts
 import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { TransferDto } from '@app/common';
 import { AccountsService } from './accounts.service';
 import { PATTERNS } from '@app/common';
@@ -12,6 +12,11 @@ export class AccountsController {
   @MessagePattern({ cmd: PATTERNS.ACCOUNTS.PING })
   ping(@Payload() data: any) {
     return { status: 'ok', pong: true };
+  }
+
+  @EventPattern(PATTERNS.ACCOUNTS.CREATE_PROFILE)
+  async handleCreateProfile(@Payload() data: any) {
+    return this.accountsService.createProfile(data);
   }
 
   @MessagePattern({ cmd: PATTERNS.ACCOUNTS.GET_BALANCE })

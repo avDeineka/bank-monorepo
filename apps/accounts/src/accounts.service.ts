@@ -13,6 +13,22 @@ export class AccountsService {
     @Inject(SERVICES.LOGGER) private readonly loggerClient: ClientProxy,
   ) { }
 
+  async createProfile(data: { userId: number; name: string; phone?: string; preferred_currency?: string }) {
+    try {
+      await this.knex('profiles').insert({
+        user_id: data.userId,
+        name: data.name,
+        phone: data.phone || null,
+        preferred_currency: data.preferred_currency || 'USD',
+      });
+      console.log(`✅ Profile created for user ${data.userId}`);
+    } catch (error) {
+      console.error('❌ Failed to create profile:', error.message);
+      // Тут можна додати логіку повтору або відкату (Saga pattern), 
+      // але для навчання поки достатньо логу
+    }
+  }
+  
   async getBalance(userId: number) {
     const account = await this.knex('accounts').where({ user_id: userId }).first();
     if (!account) return { balance: 0, currency: 'USD' };

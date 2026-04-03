@@ -4,3 +4,4 @@ export * from './constants/services';
 export * from './constants/patterns';
 export * from './database/database.module';
 export * from './dto/transfer.dto';
+export * from './modules/rmq.module';
