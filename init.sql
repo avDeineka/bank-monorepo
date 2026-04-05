@@ -2,7 +2,8 @@
 CREATE TABLE IF NOT EXISTS public.users (
     id SERIAL PRIMARY KEY,
     email character varying NOT NULL UNIQUE,
-    password character varying
+    password character varying,
+    role character varying,
 );
 
 CREATE TABLE IF NOT EXISTS profiles (
@@ -15,7 +16,8 @@ CREATE TABLE IF NOT EXISTS profiles (
     preferred_currency VARCHAR(3) DEFAULT 'USD', -- Важливо для банку!
     last_active_at TIMESTAMP,        -- Для аналітики, коли юзер востаннє заходив
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "unique_phone" UNIQUE ("phone")
 );
 
 -- Створюємо таблицю Accounts (finances)

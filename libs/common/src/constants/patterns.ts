@@ -10,6 +10,7 @@ export const PATTERNS = {
   },
   AUTH: {
     REGISTER: 'auth.register',
+    REGISTRATION_FAILED: 'auth.registration_failed',
     LOGIN: 'auth.login',
   },
   LOGGER: {

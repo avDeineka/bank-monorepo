@@ -2,6 +2,8 @@
 import { Controller, Get, Post, Body, Param, ParseIntPipe } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport'; 
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
+import { PATTERNS } from '@app/common';
 import { CreateUserDto } from './dto/create-user.dto'; 
 import { UsersService } from './users.service';
 
@@ -26,5 +28,11 @@ export class UsersController {
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
     return await this.usersService.create(createUserDto);
+  }
+
+  @EventPattern(PATTERNS.AUTH.REGISTRATION_FAILED)
+  async handleRegistrationRollback(@Payload() data: { userId: number, reason: string }) {
+    console.warn(`🔄 Saga Compensating Action: Deleting user ${data.userId} because of ${data.reason}`);
+    await this.usersService.deleteUser(data.userId);
   }
 }

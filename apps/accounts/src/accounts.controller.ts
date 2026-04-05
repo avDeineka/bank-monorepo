@@ -2,8 +2,8 @@
 import { Controller } from '@nestjs/common';
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { TransferDto } from '@app/common';
-import { AccountsService } from './accounts.service';
 import { PATTERNS } from '@app/common';
+import { AccountsService } from './accounts.service';
 
 @Controller()
 export class AccountsController {
@@ -16,7 +16,7 @@ export class AccountsController {
 
   @EventPattern(PATTERNS.ACCOUNTS.CREATE_PROFILE)
   async handleCreateProfile(@Payload() data: any) {
-    return this.accountsService.createProfile(data);
+    return this.accountsService.handleRegistration(data);
   }
 
   @MessagePattern({ cmd: PATTERNS.ACCOUNTS.GET_BALANCE })

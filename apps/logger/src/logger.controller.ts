@@ -20,7 +20,11 @@ export class LoggerController {
         created_at: new Date()
       });
     } catch (error) {
-      console.error('❌ Log recording error:', error.message);
+      if (error instanceof Error) {
+        console.error('❌ Log recording error:', error.message);
+      } else {
+        console.error('❌ Log recording error:', String(error));
+      }
     }
   }
 }

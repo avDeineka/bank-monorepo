@@ -17,7 +17,7 @@ export class UsersService {
   ) { }
 
   async findAll() {
-    return await this.knex("users").select('id','email');
+    return await this.knex("users").select('id','email','role');
   }
 
   async getUserById(id: number) {
@@ -41,7 +41,7 @@ export class UsersService {
         email,
         password: hashedPassword,
       })
-      .returning(['id', 'email']); // Повертаємо все, КРІМ пароля
+      .returning(['id', 'email', 'role']); // Повертаємо все, КРІМ пароля
 
     this.accountsClient.emit(PATTERNS.ACCOUNTS.CREATE_PROFILE, {
       userId: newUser.id,
@@ -50,5 +50,10 @@ export class UsersService {
       preferred_currency: dto.preferred_currency
     });
     return newUser;
+  }
+
+  async deleteUser (userId: number) { // аварійний випадок, коли реєстріція пройшла неуспішно
+    const result = await this.knex('users').where({ id: userId }).delete();
+    return result;
   }
 }
