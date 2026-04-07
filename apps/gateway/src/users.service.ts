@@ -5,6 +5,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { CreateUserDto } from './dto/create-user.dto';
 import { SERVICES, PATTERNS } from '@app/common';
+import { error } from 'console';
 
 @Injectable()
 export class UsersService {
@@ -14,6 +15,7 @@ export class UsersService {
     private readonly knex: Knex,
     
     @Inject(SERVICES.ACCOUNTS) private accountsClient: ClientProxy,
+    @Inject(SERVICES.LOGGER) private loggerClient: ClientProxy,
   ) { }
 
   async findAll() {
@@ -29,27 +31,39 @@ export class UsersService {
   }
 
   async create (dto: CreateUserDto) {
-    const { email, password, ...userData } = dto;
-
-    // 1. Хешуємо пароль. 10 — це кількість раундів солі (salt rounds)
+    let { email, password, role, ...userData } = dto;
+    if (!role) {
+      role = 'user';
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
+    try {
+      const [newUser] = await this.knex('users')
+        .insert({
+          email,
+          password: hashedPassword,
+          role
+        })
+        .returning(['id', 'email', 'role']) // Повертаємо все, КРІМ пароля
 
-    // 2. Записуємо в базу через Knex
-    // .returning('*') важливо для PostgreSQL, щоб отримати створеного юзера
-    const [newUser] = await this.knex('users')
-      .insert({
+      this.accountsClient.emit(PATTERNS.ACCOUNTS.CREATE_PROFILE, {
+        userId: newUser.id,
+        name: dto.name,
+        role,
         email,
-        password: hashedPassword,
-      })
-      .returning(['id', 'email', 'role']); // Повертаємо все, КРІМ пароля
-
-    this.accountsClient.emit(PATTERNS.ACCOUNTS.CREATE_PROFILE, {
-      userId: newUser.id,
-      name: dto.name,
-      phone: dto.phone,
-      preferred_currency: dto.preferred_currency
-    });
-    return newUser;
+        phone: dto.phone,
+        preferred_currency: dto.preferred_currency
+      });
+      return newUser;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String (error);
+      console.error('Failed to add new user', errorMessage);
+      this.loggerClient.emit({ cmd: PATTERNS.LOGGER.LOG_EVENT }, {
+        service: SERVICES.AUTH,
+        event: 'NEW_USER_FAILED',
+        payload: { email, role, errorMessage },
+      });
+      return { success: false, message: errorMessage };
+    }
   }
 
   async deleteUser (userId: number) { // аварійний випадок, коли реєстріція пройшла неуспішно

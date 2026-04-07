@@ -1,6 +1,5 @@
 ﻿// users.module.ts
 import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { RmqModule } from '@app/common';
 import { SERVICES, RABBIT_CONFIG } from '@app/common';
 import { UsersService } from './users.service';
@@ -9,6 +8,7 @@ import { UsersController } from './users.controller';
 @Module({
   imports: [
     RmqModule.register(SERVICES.ACCOUNTS, RABBIT_CONFIG.ACCOUNTS_QUEUE),
+    RmqModule.register(SERVICES.LOGGER, RABBIT_CONFIG.LOGGER_QUEUE),
   ],
   controllers: [UsersController],
   providers: [UsersService],

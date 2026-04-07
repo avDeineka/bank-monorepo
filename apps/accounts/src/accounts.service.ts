@@ -18,7 +18,7 @@ export class AccountsService {
     @Inject(SERVICES.LOGGER) private readonly loggerClient: ClientProxy,
   ) { }
 
-  async handleRegistration(data: any) {
+  async handleRegistration (data: any) {
     try {
       // ДОДАЄМО await, щоб почекати виконання або помилки
       await this.knex.transaction(async (trx) => {
@@ -39,12 +39,22 @@ export class AccountsService {
       });
 
       // Якщо все ок, можна повернути успіх
+      this.loggerClient.emit({ cmd: PATTERNS.LOGGER.LOG_EVENT }, {
+        service: SERVICES.AUTH,
+        event: 'NEW_USER',
+        payload: data,
+      });
       return { status: 'success' };
 
     } catch (error) {
       // Тепер ми ПРИЗЕМЛИМОСЯ тут
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('❌ Registration in Accounts failed (SAGA Triggered):', errorMessage);
+      this.loggerClient.emit({ cmd: PATTERNS.LOGGER.LOG_EVENT }, {
+        service: SERVICES.AUTH,
+        event: 'NEW_USER_FAILED',
+        payload: data,
+      });
 
       // Надсилаємо сигнал "відкату" в Auth
       this.authClient.emit(PATTERNS.AUTH.REGISTRATION_FAILED, {
