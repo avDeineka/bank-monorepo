@@ -39,7 +39,7 @@ export class AccountsService {
       });
 
       // Якщо все ок, можна повернути успіх
-      this.loggerClient.emit({ cmd: PATTERNS.LOGGER.LOG_EVENT }, {
+      this.loggerClient.emit (PATTERNS.LOGGER.LOG_EVENT, {
         service: SERVICES.AUTH,
         event: 'NEW_USER',
         payload: data,
@@ -50,7 +50,7 @@ export class AccountsService {
       // Тепер ми ПРИЗЕМЛИМОСЯ тут
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('❌ Registration in Accounts failed (SAGA Triggered):', errorMessage);
-      this.loggerClient.emit({ cmd: PATTERNS.LOGGER.LOG_EVENT }, {
+      this.loggerClient.emit (PATTERNS.LOGGER.LOG_EVENT, {
         service: SERVICES.AUTH,
         event: 'NEW_USER_FAILED',
         payload: data,
@@ -109,7 +109,7 @@ export class AccountsService {
           .increment('balance', amount);
       });
       
-      this.loggerClient.emit({ cmd: PATTERNS.LOGGER.LOG_EVENT }, {
+      this.loggerClient.emit (PATTERNS.LOGGER.LOG_EVENT, {
         service: 'accounts',
         event: 'TRANSFER_COMPLETED',
         payload: { from: fromUserId, to: toUserId, amount, status: 'success' }
@@ -125,7 +125,7 @@ export class AccountsService {
 
   // Допоміжний метод для чистоти коду
   private async logFailure(from: number, to: number, amount: number, reason: string) {
-    this.loggerClient.emit({ cmd: PATTERNS.LOGGER.LOG_EVENT }, {
+    this.loggerClient.emit (PATTERNS.LOGGER.LOG_EVENT, {
       service: 'accounts',
       event: 'TRANSFER_FAILED',
       payload: { from, to, amount, reason, timestamp: new Date() }

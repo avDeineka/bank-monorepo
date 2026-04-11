@@ -17,6 +17,6 @@ async function bootstrap() {
     },
   );
   await app.listen();
-  console.log('Accounts Microservice is listening...');
+  console.log('🚀 Accounts Microservice is listening...');
 }
 bootstrap();

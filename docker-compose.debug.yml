@@ -1,4 +1,6 @@
-﻿version: '3.8'
+﻿# docker compose -f docker-compose.debug.yml up --build
+
+version: "3.8"
 
 services:
   db:
@@ -18,68 +20,74 @@ services:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"   # Порт для передачі даних
-      - "15672:15672" # Панель управління (User: guest, Pass: guest)
+      - "5672:5672"
+      - "15672:15672" # панель управління
 
   gateway:
     build:
       context: .
       args:
         APP_NAME: gateway
+        BUILD_MODE: debug
     ports:
       - "3000:3000"
-      - "9230:9229"    # debug порт gateway (9230 на хості → 9229 у контейнері)
+      - "9230:9229"
     depends_on:
       - accounts
       - logger
       - rabbitmq
     environment:
-      - APP_NAME=gateway
       - JWT_SECRET=${JWT_SECRET}
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - DATABASE_URL=postgres://user:password@db:5432/bank_db
       - DB_HOST=db
       - ACCOUNTS_HOST=accounts
       - LOGGER_HOST=logger
-    command: npm run start:debug   # важливо: запуск в debug‑режимі
+      - BUILD_MODE=debug
+      - APP_NAME=gateway
+    command: []
 
   accounts:
     build:
       context: .
       args:
         APP_NAME: accounts
+        BUILD_MODE: debug
     ports:
       - "3001:3001"
-      - "9231:9229"    # debug порт accounts (9231 на хості)
+      - "9231:9229"
     depends_on:
       - db
       - rabbitmq
       - logger
     environment:
-      - APP_NAME=accounts
       - DATABASE_URL=postgres://user:password@db:5432/bank_db
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - DB_HOST=db
       - LOGGER_HOST=logger
-    command: npm run start:debug
+      - BUILD_MODE=debug
+      - APP_NAME=accounts
+    command: []
 
   logger:
     build:
       context: .
       args:
         APP_NAME: logger
+        BUILD_MODE: debug
     ports:
       - "3002:3002"
-      - "9232:9229"    # debug порт logger (9232 на хості)
+      - "9232:9229"
     depends_on:
       - db
       - rabbitmq
     environment:
-      - APP_NAME=logger
       - DATABASE_URL=postgres://user:password@db:5432/bank_db
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - BUILD_MODE=debug
       - DB_HOST=db
-    command: npm run start:debug
+      - APP_NAME=logger
+    command: []
 
 volumes:
   postgres_data:

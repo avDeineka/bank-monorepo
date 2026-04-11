@@ -1,9 +1,16 @@
 ﻿// accounts/src/accounts.controller.ts
 import { Controller } from '@nestjs/common';
-import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import { TransferDto } from '@app/common';
 import { PATTERNS } from '@app/common';
 import { AccountsService } from './accounts.service';
+
+interface PostgresError extends Error {
+  code?: string;
+  detail?: string;
+  table?: string;
+  constraint?: string;
+}
 
 @Controller()
 export class AccountsController {
@@ -14,9 +21,24 @@ export class AccountsController {
     return { status: 'ok', pong: true };
   }
 
-  @EventPattern(PATTERNS.ACCOUNTS.CREATE_PROFILE)
+  @MessagePattern({ cmd: PATTERNS.ACCOUNTS.CREATE_PROFILE })
   async handleCreateProfile(@Payload() data: any) {
-    return this.accountsService.handleRegistration(data);
+    try {
+      return await this.accountsService.handleRegistration (data);
+    } catch (err: unknown) {
+      const error = err as PostgresError; // Кастуємо до нашого інтерфейсу
+
+      // Логуємо для дебагу на стороні Accounts
+      console.error('Database error in Accounts:', error.detail || error.message);
+
+      // Специфічна обробка кодів помилок Postgres
+      if (error.code === '23505') { // Unique violation
+        throw new RpcException(`Conflict: ${error.detail}`);
+      }
+
+      // Універсальний кидок для всіх інших випадків
+      throw new RpcException(error.message || 'Internal Database Error');
+    }
   }
 
   @MessagePattern({ cmd: PATTERNS.ACCOUNTS.GET_BALANCE })

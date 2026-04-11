@@ -1,11 +1,11 @@
 ﻿// users.service.ts
 import * as bcrypt from 'bcrypt';
 import { Knex } from 'knex';
-import { Injectable, Inject } from '@nestjs/common';
+import { lastValueFrom } from 'rxjs';
+import { Injectable, Inject, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { CreateUserDto } from './dto/create-user.dto';
 import { SERVICES, PATTERNS } from '@app/common';
-import { error } from 'console';
 
 @Injectable()
 export class UsersService {
@@ -44,20 +44,37 @@ export class UsersService {
           role
         })
         .returning(['id', 'email', 'role']) // Повертаємо все, КРІМ пароля
-
-      this.accountsClient.emit(PATTERNS.ACCOUNTS.CREATE_PROFILE, {
-        userId: newUser.id,
-        name: dto.name,
-        role,
-        email,
-        phone: dto.phone,
-        preferred_currency: dto.preferred_currency
-      });
-      return newUser;
+      try {
+        const result = await lastValueFrom(
+          this.accountsClient.send({ cmd: PATTERNS.ACCOUNTS.CREATE_PROFILE }, {
+            userId: newUser.id,
+            name: dto.name,
+            role,
+            email,
+            phone: dto.phone,
+            preferred_currency: dto.preferred_currency
+          })
+        );
+        return result;
+      } catch (error) {
+        // Тут error — це те, що ми кинули через RpcException
+        console.error('🔴 Saga Compensation: Deleting user', newUser.id, 'due to:', error);
+        // Робимо локальний відкат (Compensating action)
+        await this.deleteUser(newUser.id);
+        // Логуємо провал для аналітики
+        const errorMessage = error instanceof Error ? error.message : error;
+        this.loggerClient.emit(PATTERNS.LOGGER.LOG_EVENT, {
+          service: SERVICES.AUTH,
+          event: 'SAGA_ROLLBACK',
+          payload: { userId: newUser.id, reason: errorMessage }
+        });
+        // Кидаємо чесну помилку на фронтенд
+        throw new ConflictException (errorMessage || 'Registration failed');
+      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String (error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('Failed to add new user', errorMessage);
-      this.loggerClient.emit({ cmd: PATTERNS.LOGGER.LOG_EVENT }, {
+      this.loggerClient.emit(PATTERNS.LOGGER.LOG_EVENT, {
         service: SERVICES.AUTH,
         event: 'NEW_USER_FAILED',
         payload: { email, role, errorMessage },

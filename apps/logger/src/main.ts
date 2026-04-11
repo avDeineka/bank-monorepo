@@ -17,6 +17,6 @@ async function bootstrap() {
     },
   );
   await app.listen();
-  console.log("Logger Microservice is listening...");
+  console.log("🚀 Logger Microservice is listening...");
 }
 bootstrap();
