@@ -1,7 +1,7 @@
 ﻿// users.service.ts
 import * as bcrypt from 'bcrypt';
 import { Knex } from 'knex';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, firstValueFrom } from 'rxjs';
 import { Injectable, Inject, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -45,7 +45,7 @@ export class UsersService {
         })
         .returning(['id', 'email', 'role']) // Повертаємо все, КРІМ пароля
       try {
-        const result = await lastValueFrom(
+        const result = await firstValueFrom(
           this.accountsClient.send({ cmd: PATTERNS.ACCOUNTS.CREATE_PROFILE }, {
             userId: newUser.id,
             name: dto.name,
@@ -57,12 +57,14 @@ export class UsersService {
         );
         return result;
       } catch (error) {
-        // Тут error — це те, що ми кинули через RpcException
-        console.error('🔴 Saga Compensation: Deleting user', newUser.id, 'due to:', error);
+        const rpcError = error instanceof Error ? error?.message : error;
+        console.error('🔴 Saga Compensation: Deleting user', newUser.id, 'due to:', rpcError);
         // Робимо локальний відкат (Compensating action)
         await this.deleteUser(newUser.id);
         // Логуємо провал для аналітики
-        const errorMessage = error instanceof Error ? error.message : error;
+        const errorMessage = rpcError === 'no elements in sequence'
+          ? 'Phone number already assigned (or service error)'
+          : rpcError;
         this.loggerClient.emit(PATTERNS.LOGGER.LOG_EVENT, {
           service: SERVICES.AUTH,
           event: 'SAGA_ROLLBACK',

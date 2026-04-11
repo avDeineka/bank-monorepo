@@ -25,19 +25,13 @@ export class AccountsController {
   async handleCreateProfile(@Payload() data: any) {
     try {
       return await this.accountsService.handleRegistration (data);
-    } catch (err: unknown) {
-      const error = err as PostgresError; // Кастуємо до нашого інтерфейсу
-
-      // Логуємо для дебагу на стороні Accounts
-      console.error('Database error in Accounts:', error.detail || error.message);
-
-      // Специфічна обробка кодів помилок Postgres
-      if (error.code === '23505') { // Unique violation
-        throw new RpcException(`Conflict: ${error.detail}`);
-      }
-
-      // Універсальний кидок для всіх інших випадків
-      throw new RpcException(error.message || 'Internal Database Error');
+    } catch (error: any) {
+      // Якщо це помилка Postgres (unique constraint), витягуємо чистий текст
+      const message = error.detail || error.message;
+      console.log('Sending to Gateway:', message);
+      if (error.code === '23505') {} // Unique violation
+      // Кидаємо ОБ'ЄКТ, це краще для серіалізації в RabbitMQ
+      throw new RpcException({ message, status: 'error' });
     }
   }
 
