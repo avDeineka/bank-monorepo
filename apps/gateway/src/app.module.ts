@@ -7,6 +7,8 @@ import { UsersModule } from './users.module';
 import { AuthModule } from './auth.module';
 import { PaymentsModule } from "./gateway/payments.module";
 import { HttpLoggerMiddleware } from './middleware/logger.middleware';
+import { TraceMiddleware } from './middleware/trace.middleware';
+import { AppLogger } from './logger/app-logger.service';
 
 @Module({
   imports: [
@@ -20,13 +22,14 @@ import { HttpLoggerMiddleware } from './middleware/logger.middleware';
     PaymentsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, AppLogger],
+  exports: [AppLogger], // Робимо доступним для всього застосунку
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(HttpLoggerMiddleware)
-      .forRoutes('*'); // Застосувати до всіх ендпоїнтів
+      .apply(TraceMiddleware, HttpLoggerMiddleware)
+      .forRoutes('*');
   }
 }
 

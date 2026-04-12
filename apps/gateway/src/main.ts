@@ -3,9 +3,15 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from "@nestjs/microservices";
 import { RABBIT_CONFIG } from '@app/common';
+import { AppLogger } from './logger/app-logger.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create (AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true, // Це дозволить логеру чекати на ініціалізацію модулів
+  });
+
+  const logger = app.get(AppLogger);
+  app.useLogger(logger); // Тепер AppLogger — головний у домі
 
   // Цей рядок вмикає глобальну валідацію для всіх пост-запитів!
   // Без цього рядка декоратори в DTO будуть просто "коментарями"
