@@ -1,7 +1,7 @@
 ﻿// common/middleware/trace.middleware.ts
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { traceStorage } from '../trace-storage';
+import { traceStorage } from '@app/common';
 
 @Injectable()
 export class TraceMiddleware implements NestMiddleware {

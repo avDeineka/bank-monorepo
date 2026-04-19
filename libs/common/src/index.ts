@@ -5,3 +5,5 @@ export * from './constants/patterns';
 export * from './database/database.module';
 export * from './dto/transfer.dto';
 export * from './modules/rmq.module';
+export * from './trace-storage';
+export * from './utils/rpc.utils';

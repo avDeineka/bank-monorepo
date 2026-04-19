@@ -4,22 +4,39 @@ import { ClientProxy } from '@nestjs/microservices';
 import { AuthGuard } from '@nestjs/passport';
 import { TransferDto } from '@app/common';
 import { SERVICES, PATTERNS } from '@app/common';
+//import { TraceableRmqClient } from '../clients/traceable-rmq-client';
+import { sendMessage } from '@app/common';
 
 @Controller('payments')
 export class PaymentsController {
   constructor(
-    @Inject(SERVICES.ACCOUNTS) private accountsClient: ClientProxy,
-  ) {}
+    //@Inject(SERVICES.ACCOUNTS) private accountsClient: ClientProxy,
+    @Inject(SERVICES.ACCOUNTS) private accountsClient: any,
+  ) {
+    // Перевірка типу об'єкта при старті
+    // const isTraceable = accountsClient instanceof TraceableRmqClient;
+    // console.log(`--- [CHECK] AccountsClient is Traceable: ${isTraceable} ---`);
+  }
 
   @Get('ping')
-  testTcp() {
-    return this.accountsClient.send({ cmd: PATTERNS.ACCOUNTS.PING }, { hello: 'from gateway' });
+  accountsPing() {
+    //return this.accountsClient.send({ cmd: PATTERNS.ACCOUNTS.PING }, { hello: 'from gateway' });
+    return sendMessage(
+      this.accountsClient,
+      PATTERNS.ACCOUNTS.PING,
+      { hello: 'from gateway' }
+    );
   }
   
   @UseGuards(AuthGuard('jwt'))
   @Get('balance')
   async getMyBalance(@Req() req) {
-    return this.accountsClient.send({ cmd: PATTERNS.ACCOUNTS.GET_BALANCE }, { userId: req.user.userId });
+    //return this.accountsClient.send({ cmd: PATTERNS.ACCOUNTS.GET_BALANCE }, { userId: req.user.userId });
+    return sendMessage(
+      this.accountsClient,
+      PATTERNS.ACCOUNTS.GET_BALANCE,
+      { userId: req.user.userId }
+    );
   }
 
   @UseGuards(AuthGuard('jwt'))

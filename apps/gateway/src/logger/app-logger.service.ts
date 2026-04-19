@@ -1,6 +1,6 @@
 ﻿// logger/app-logger.service.ts
 import { ConsoleLogger, Injectable, Scope } from '@nestjs/common';
-import { traceStorage } from '../trace-storage';
+import { traceStorage } from '@app/common';
 
 @Injectable(/*{ scope: Scope.TRANSIENT }*/) // за замовчуванням Singleton
 export class AppLogger extends ConsoleLogger {

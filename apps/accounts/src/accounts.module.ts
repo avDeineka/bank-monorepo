@@ -1,14 +1,14 @@
 // accounts/src/accounts.module.ts
 import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { RmqModule } from '@app/common';
 import { ConfigModule } from '@nestjs/config';
+import { DatabaseModule } from '@app/common';
+import { SERVICES, RABBIT_CONFIG } from '@app/common';
+import { AppLogger } from './logger/app-logger.service'
 import { AccountsController } from './accounts.controller';
 import { AccountsService } from './accounts.service';
 import { ProfilesRepository } from './repositories/profiles.repository';
 import { AccountsRepository } from './repositories/accounts.repository';
-import { DatabaseModule } from '@app/common';
-import { SERVICES, RABBIT_CONFIG } from '@app/common';
 
 @Module({
   imports: [
@@ -26,6 +26,8 @@ import { SERVICES, RABBIT_CONFIG } from '@app/common';
     AccountsService,
     ProfilesRepository,
     AccountsRepository,
+    AppLogger,
   ],
+  exports: [AppLogger],
 })
 export class AccountsModule { }

@@ -1,5 +1,5 @@
 ﻿// accounts/src/accounts.controller.ts
-import { Controller } from '@nestjs/common';
+import { Controller, Logger } from '@nestjs/common';
 import { EventPattern, MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import { TransferDto } from '@app/common';
 import { PATTERNS } from '@app/common';
@@ -15,9 +15,11 @@ interface PostgresError extends Error {
 @Controller()
 export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
+  private readonly logger = new Logger(AccountsController.name);
 
   @MessagePattern({ cmd: PATTERNS.ACCOUNTS.PING })
   ping(@Payload() data: any) {
+    this.logger.log(`ping receives: ${data.hello}`);
     return { status: 'ok', pong: true };
   }
 
@@ -37,6 +39,7 @@ export class AccountsController {
 
   @MessagePattern({ cmd: PATTERNS.ACCOUNTS.GET_BALANCE })
   async get_balance(@Payload() data: { userId: number }) {
+    this.logger.log(`user ${data.userId} balance is asked`);
     return this.accountsService.getBalance (data.userId);
   }
 
