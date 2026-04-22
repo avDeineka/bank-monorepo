@@ -1,7 +1,7 @@
 // app.module.ts
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ClientsModule } from '@nestjs/microservices';
+import { LoggerModule } from '@app/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from '@app/common';
@@ -10,8 +10,6 @@ import { AuthModule } from './auth.module';
 import { PaymentsModule } from "./gateway/payments.module";
 import { HttpLoggerMiddleware } from './middleware/logger.middleware';
 import { TraceMiddleware } from './middleware/trace.middleware';
-import { AppLogger } from './logger/app-logger.service';
-//import { GlobalClientsModule } from './clients/global-clients.module';
 
 @Module({
   imports: [
@@ -20,7 +18,7 @@ import { AppLogger } from './logger/app-logger.service';
       envFilePath: '.env',
     }),
     //GlobalClientsModule, // Один раз тут — і все
-    
+    LoggerModule,
     DatabaseModule,
     UsersModule,
     AuthModule,
@@ -29,10 +27,6 @@ import { AppLogger } from './logger/app-logger.service';
   controllers: [AppController],
   providers: [
     AppService,
-    AppLogger,
-  ],
-  exports: [
-    AppLogger, // Робимо доступним для всього застосунку
   ],
 })
 export class AppModule implements NestModule {

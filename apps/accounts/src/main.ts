@@ -2,8 +2,8 @@
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { RABBIT_CONFIG } from '@app/common';
-import { TraceIdInterceptor } from './interceptors/trace-id.interceptor';
-import { AppLogger } from './logger/app-logger.service'
+import { AppLogger } from '@app/common';
+import { RmqTraceInterceptor } from '@app/common';
 import { AccountsModule } from './accounts.module';
 
 async function bootstrap() {
@@ -20,7 +20,7 @@ async function bootstrap() {
   );
   const logger = app.get(AppLogger);
   app.useLogger(logger);
-  app.useGlobalInterceptors(new TraceIdInterceptor());
+  app.useGlobalInterceptors(new RmqTraceInterceptor());
   await app.listen();
   console.log('🚀 Accounts Microservice is listening...');
 }

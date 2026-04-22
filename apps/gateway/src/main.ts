@@ -1,9 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from "@nestjs/microservices";
 import { RABBIT_CONFIG } from '@app/common';
-import { AppLogger } from './logger/app-logger.service';
+import { AppLogger } from '@app/common';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {

@@ -19,19 +19,22 @@ export class AccountsController {
 
   @MessagePattern({ cmd: PATTERNS.ACCOUNTS.PING })
   ping(@Payload() data: any) {
-    this.logger.log(`ping receives: ${data.hello}`);
+    this.logger.log(`ping receives ${data.hello}`);
     return { status: 'ok', pong: true };
   }
 
   @MessagePattern({ cmd: PATTERNS.ACCOUNTS.CREATE_PROFILE })
   async handleCreateProfile(@Payload() data: any) {
     try {
+      this.logger.log(`Creating profile for user ${data}`);
       return await this.accountsService.handleRegistration (data);
     } catch (error: any) {
       // Якщо це помилка Postgres (unique constraint), витягуємо чистий текст
       const message = error.detail || error.message;
-      console.log('Sending to Gateway:', message);
-      if (error.code === '23505') {} // Unique violation
+      this.logger.error('Sending to Gateway:', message);
+      if (error.code === '23505') {
+        this.logger.warn(`unique violation`);
+      } // Unique violation
       // Кидаємо ОБ'ЄКТ, це краще для серіалізації в RabbitMQ
       throw new RpcException({ message, status: 'error' });
     }

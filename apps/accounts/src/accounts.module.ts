@@ -4,7 +4,7 @@ import { RmqModule } from '@app/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from '@app/common';
 import { SERVICES, RABBIT_CONFIG } from '@app/common';
-import { AppLogger } from './logger/app-logger.service'
+import { LoggerModule } from '@app/common';
 import { AccountsController } from './accounts.controller';
 import { AccountsService } from './accounts.service';
 import { ProfilesRepository } from './repositories/profiles.repository';
@@ -17,6 +17,7 @@ import { AccountsRepository } from './repositories/accounts.repository';
       envFilePath: '.env',
     }),
     DatabaseModule,
+    LoggerModule,
     // Реєструємо клієнтів для зв'язку з мікросервісами автентифікації і логів
     RmqModule.register(SERVICES.AUTH, RABBIT_CONFIG.AUTH_QUEUE),
     RmqModule.register(SERVICES.LOGGER, RABBIT_CONFIG.LOGGER_QUEUE),
@@ -26,8 +27,6 @@ import { AccountsRepository } from './repositories/accounts.repository';
     AccountsService,
     ProfilesRepository,
     AccountsRepository,
-    AppLogger,
   ],
-  exports: [AppLogger],
 })
 export class AccountsModule { }

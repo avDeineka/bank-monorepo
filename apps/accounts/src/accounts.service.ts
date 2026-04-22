@@ -4,6 +4,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { Knex } from 'knex';
 import { TransferDto } from '@app/common';
 import { SERVICES, PATTERNS } from '@app/common';
+import { AppLogger } from '@app/common';
 import { ProfilesRepository } from './repositories/profiles.repository';
 import { AccountsRepository } from './repositories/accounts.repository';
 
@@ -13,10 +14,13 @@ export class AccountsService {
     private readonly profilesRepo: ProfilesRepository,
     private readonly accountsRepo: AccountsRepository,
     @Inject('KNEX_CONNECTION') private readonly knex: Knex,
+    private readonly logger: AppLogger,  
     // Ці рядки ОБОV'ЯЗКОВО має бути тут:
     @Inject(SERVICES.AUTH) private readonly authClient: ClientProxy,
     @Inject(SERVICES.LOGGER) private readonly loggerClient: ClientProxy,
-  ) { }
+  ) {
+    this.logger.setContext(AccountsService.name);
+  }
 
   async handleRegistration (data: any) {
     try {
@@ -49,7 +53,7 @@ export class AccountsService {
     } catch (error) {
       // Тепер ми ПРИЗЕМЛИМОСЯ тут
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('❌ Registration in Accounts failed (SAGA Triggered):', errorMessage);
+      this.logger.error('❌ Registration in Accounts failed (SAGA Triggered):', errorMessage);
       this.loggerClient.emit (PATTERNS.LOGGER.LOG_EVENT, {
         service: SERVICES.AUTH,
         event: 'NEW_USER_FAILED',
