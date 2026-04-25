@@ -1,5 +1,5 @@
 ﻿// logger/src/logger.controller.ts
-import { Controller, Inject } from '@nestjs/common';
+import { Controller, Inject, Logger } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { Knex } from 'knex';
 import { PATTERNS } from '@app/common';
@@ -8,9 +8,11 @@ import { PATTERNS } from '@app/common';
 export class LoggerController {
   constructor(@Inject('KNEX_CONNECTION') private readonly knex: Knex) {}
 
+  private readonly logger = new Logger(LoggerController.name);
+
   @EventPattern (PATTERNS.LOGGER.LOG_EVENT) // EventPattern для .emit()
   async handleLogEvent(@Payload() data: any) {
-    console.log('📝 New logging event:', data.event);
+    this.logger.log(`📝 logging event: ${data.event} ${JSON.stringify(data.payload)}`);
 
     try {
       await this.knex('audit_logs').insert({
@@ -20,11 +22,8 @@ export class LoggerController {
         created_at: new Date()
       });
     } catch (error) {
-      if (error instanceof Error) {
-        console.error('❌ Log recording error:', error.message);
-      } else {
-        console.error('❌ Log recording error:', String(error));
-      }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('❌ Failed to record log event', errorMessage);
     }
   }
 }

@@ -26,12 +26,12 @@ export class AccountsController {
   @MessagePattern({ cmd: PATTERNS.ACCOUNTS.CREATE_PROFILE })
   async handleCreateProfile(@Payload() data: any) {
     try {
-      this.logger.log(`Creating profile for user ${data}`);
+      this.logger.log(`Creating profile for user ${data.userId} ${data.name} ${data.role} ${data.email}`);
       return await this.accountsService.handleRegistration (data);
     } catch (error: any) {
       // Якщо це помилка Postgres (unique constraint), витягуємо чистий текст
       const message = error.detail || error.message;
-      this.logger.error('Sending to Gateway:', message);
+      this.logger.error(`Sending to Gateway: ${message}`);
       if (error.code === '23505') {
         this.logger.warn(`unique violation`);
       } // Unique violation

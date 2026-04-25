@@ -1,5 +1,5 @@
 ﻿// users.controller.ts
-import { Controller, Get, Post, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, ParseIntPipe, Logger } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport'; 
 import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
@@ -10,6 +10,8 @@ import { UsersService } from './users.service';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
+
+  private readonly logger = new Logger(UsersController.name);
 
   // Цей метод відповідатиме на GET /users
   @UseGuards(AuthGuard('jwt')) // Цей метод тепер доступний ТІЛЬКИ з токеном
@@ -32,7 +34,7 @@ export class UsersController {
 
   @EventPattern(PATTERNS.AUTH.REGISTRATION_FAILED)
   async handleRegistrationRollback(@Payload() data: { userId: number, reason: string }) {
-    console.warn(`🔄 Saga Compensating Action: Deleting user ${data.userId} because of ${data.reason}`);
+    this.logger.warn(`🔄 Saga Compensating Action: Deleting user ${data.userId} because of ${data.reason}`);
     await this.usersService.deleteUser(data.userId);
   }
 }

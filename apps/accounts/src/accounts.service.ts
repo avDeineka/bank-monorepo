@@ -4,7 +4,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { Knex } from 'knex';
 import { TransferDto } from '@app/common';
 import { SERVICES, PATTERNS } from '@app/common';
-import { AppLogger } from '@app/common';
+import { AppLogger, rpc } from '@app/common';
 import { ProfilesRepository } from './repositories/profiles.repository';
 import { AccountsRepository } from './repositories/accounts.repository';
 
@@ -43,7 +43,7 @@ export class AccountsService {
       });
 
       // Якщо все ок, можна повернути успіх
-      this.loggerClient.emit (PATTERNS.LOGGER.LOG_EVENT, {
+      rpc.emit (this.loggerClient,PATTERNS.LOGGER.LOG_EVENT, {
         service: SERVICES.AUTH,
         event: 'NEW_USER',
         payload: data,
@@ -53,15 +53,15 @@ export class AccountsService {
     } catch (error) {
       // Тепер ми ПРИЗЕМЛИМОСЯ тут
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('❌ Registration in Accounts failed (SAGA Triggered):', errorMessage);
-      this.loggerClient.emit (PATTERNS.LOGGER.LOG_EVENT, {
+      this.logger.error(`❌ SAGA Triggered, Registration in Accounts failed ${errorMessage}`);
+      rpc.emit (this.loggerClient, PATTERNS.LOGGER.LOG_EVENT, {
         service: SERVICES.AUTH,
         event: 'NEW_USER_FAILED',
         payload: data,
       });
 
       // Надсилаємо сигнал "відкату" в Auth
-      this.authClient.emit(PATTERNS.AUTH.REGISTRATION_FAILED, {
+      rpc.emit (this.authClient,PATTERNS.AUTH.REGISTRATION_FAILED, {
         userId: data.userId,
         reason: errorMessage
       });
@@ -113,7 +113,7 @@ export class AccountsService {
           .increment('balance', amount);
       });
       
-      this.loggerClient.emit (PATTERNS.LOGGER.LOG_EVENT, {
+      rpc.emit(this.loggerClient, PATTERNS.LOGGER.LOG_EVENT, {
         service: 'accounts',
         event: 'TRANSFER_COMPLETED',
         payload: { from: fromUserId, to: toUserId, amount, status: 'success' }
@@ -129,7 +129,7 @@ export class AccountsService {
 
   // Допоміжний метод для чистоти коду
   private async logFailure(from: number, to: number, amount: number, reason: string) {
-    this.loggerClient.emit (PATTERNS.LOGGER.LOG_EVENT, {
+    rpc.emit(this.loggerClient, PATTERNS.LOGGER.LOG_EVENT, {
       service: 'accounts',
       event: 'TRANSFER_FAILED',
       payload: { from, to, amount, reason, timestamp: new Date() }

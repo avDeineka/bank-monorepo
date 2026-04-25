@@ -2,10 +2,10 @@
 import * as bcrypt from 'bcrypt';
 import { Knex } from 'knex';
 import { lastValueFrom, firstValueFrom } from 'rxjs';
-import { Injectable, Inject, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Inject, ConflictException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { CreateUserDto } from './dto/create-user.dto';
-import { SERVICES, PATTERNS } from '@app/common';
+import { SERVICES, PATTERNS, rpc } from '@app/common';
 
 @Injectable()
 export class UsersService {
@@ -17,6 +17,8 @@ export class UsersService {
     @Inject(SERVICES.ACCOUNTS) private accountsClient: ClientProxy,
     @Inject(SERVICES.LOGGER) private loggerClient: ClientProxy,
   ) { }
+
+  private readonly logger = new Logger(UsersService.name);
 
   async findAll() {
     return await this.knex("users").select('id','email','role');
@@ -46,7 +48,7 @@ export class UsersService {
         .returning(['id', 'email', 'role']) // Повертаємо все, КРІМ пароля
       try {
         const result = await firstValueFrom(
-          this.accountsClient.send({ cmd: PATTERNS.ACCOUNTS.CREATE_PROFILE }, {
+          rpc.send (this.accountsClient, PATTERNS.ACCOUNTS.CREATE_PROFILE, {
             userId: newUser.id,
             name: dto.name,
             role,
@@ -58,7 +60,7 @@ export class UsersService {
         return result;
       } catch (error) {
         const rpcError = error instanceof Error ? error?.message : error;
-        console.error('🔴 Saga Compensation: Deleting user', newUser.id, 'due to:', rpcError);
+        this.logger.error(`🔴 Saga Compensation: Deleting user ${newUser.id} due to ${rpcError}`);
         // Робимо локальний відкат (Compensating action)
         await this.deleteUser(newUser.id);
         // Логуємо провал для аналітики
@@ -75,7 +77,7 @@ export class UsersService {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('Failed to add new user', errorMessage);
+      this.logger.error('❌ Failed to add new user', errorMessage);
       this.loggerClient.emit(PATTERNS.LOGGER.LOG_EVENT, {
         service: SERVICES.AUTH,
         event: 'NEW_USER_FAILED',
