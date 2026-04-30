@@ -25,13 +25,13 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: {
       urls: [RABBIT_CONFIG.URL],
-      queue: RABBIT_CONFIG.AUTH_QUEUE, // МАЄ ЗБІГАТИСЯ
+      queue: RABBIT_CONFIG.GATEWAY_QUEUE,
       queueOptions: { durable: false },
     },
   });
 
   await app.startAllMicroservices();
   await app.listen(process.env.PORT ?? 3000);
-  console.log(`🚀 Gateway/Auth service is listening...`);
+  console.log(`🚀 Gateway service is listening...`);
 }
 bootstrap();

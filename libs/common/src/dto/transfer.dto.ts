@@ -1,4 +1,4 @@
-﻿import { IsNumber, IsPositive, Min } from 'class-validator';
+﻿import { IsNumber, IsPositive, IsString, Min } from 'class-validator';
 
 export class TransferDto {
   @IsNumber()
@@ -12,4 +12,7 @@ export class TransferDto {
   @IsNumber()
   @IsPositive({ message: 'Сума має бути більшою за нуль' })
   amount: number;
+
+  @IsString()
+  currency: string;
 }

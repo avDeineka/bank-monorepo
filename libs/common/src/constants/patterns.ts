@@ -9,9 +9,11 @@ export const PATTERNS = {
     DO_TRANSFER: 'accounts.do_transfer',
   },
   AUTH: {
+    LOGIN: 'auth.login',
     REGISTER: 'auth.register',
     REGISTRATION_FAILED: 'auth.registration_failed',
-    LOGIN: 'auth.login',
+    USER: 'auth.user',
+    USERS: 'auth.users',
   },
   LOGGER: {
     LOG_EVENT: 'logger.log_event',

@@ -9,11 +9,10 @@ services:
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: bank_db
     ports:
       - "5433:5432"
     volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
       - postgres_data:/var/lib/postgresql/data
 
   rabbitmq:
@@ -21,7 +20,7 @@ services:
     container_name: rabbitmq
     ports:
       - "5672:5672"
-      - "15672:15672" # панель управління
+      - "15672:15672"
 
   gateway:
     build:
@@ -34,18 +33,33 @@ services:
       - "9230:9229"
     depends_on:
       - accounts
+      - auth
       - logger
-      - rabbitmq
     environment:
       - JWT_SECRET=${JWT_SECRET}
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
-      - DATABASE_URL=postgres://user:password@db:5432/bank_db
-      - DB_HOST=db
       - ACCOUNTS_HOST=accounts
+      - AUTH_HOST=auth
       - LOGGER_HOST=logger
-      - BUILD_MODE=debug
       - APP_NAME=gateway
-    command: []
+
+  auth:
+    build:
+      context: .
+      args:
+        APP_NAME: auth
+        BUILD_MODE: debug
+    ports:
+      - "3003:3003"
+      - "9233:9229"
+    depends_on:
+      - db
+      - rabbitmq
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - DATABASE_URL=postgres://user:password@db:5432/auth_db
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - APP_NAME=auth
 
   accounts:
     build:
@@ -59,15 +73,10 @@ services:
     depends_on:
       - db
       - rabbitmq
-      - logger
     environment:
       - DATABASE_URL=postgres://user:password@db:5432/bank_db
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
-      - DB_HOST=db
-      - LOGGER_HOST=logger
-      - BUILD_MODE=debug
       - APP_NAME=accounts
-    command: []
 
   logger:
     build:
@@ -82,12 +91,9 @@ services:
       - db
       - rabbitmq
     environment:
-      - DATABASE_URL=postgres://user:password@db:5432/bank_db
+      - DATABASE_URL=postgres://user:password@db:5432/audit_db
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
-      - BUILD_MODE=debug
-      - DB_HOST=db
       - APP_NAME=logger
-    command: []
 
 volumes:
   postgres_data:

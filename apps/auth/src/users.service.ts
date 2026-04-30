@@ -4,8 +4,7 @@ import { Knex } from 'knex';
 import { lastValueFrom, firstValueFrom } from 'rxjs';
 import { Injectable, Inject, ConflictException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { CreateUserDto } from './dto/create-user.dto';
-import { SERVICES, PATTERNS, rpc } from '@app/common';
+import { SERVICES, PATTERNS, CreateUserDto, rpc } from '@app/common';
 
 @Injectable()
 export class UsersService {
