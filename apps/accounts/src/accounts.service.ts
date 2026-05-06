@@ -5,13 +5,11 @@ import { Knex } from 'knex';
 import { TransferDto } from '@app/common';
 import { SERVICES, PATTERNS } from '@app/common';
 import { AppLogger, rpc } from '@app/common';
-import { ProfilesRepository } from './repositories/profiles.repository';
 import { AccountsRepository } from './repositories/accounts.repository';
 
 @Injectable()
 export class AccountsService {
   constructor(
-    private readonly profilesRepo: ProfilesRepository,
     private readonly accountsRepo: AccountsRepository,
     @Inject('KNEX_CONNECTION') private readonly knex: Knex,
     private readonly logger: AppLogger,  
@@ -24,17 +22,8 @@ export class AccountsService {
 
   async handleRegistration (data: any) {
     try {
-      // ДОДАЄМО await, щоб почекати виконання або помилки
       await this.knex.transaction(async (trx) => {
-        // 1. Створюємо профіль
-        await this.profilesRepo.create({
-          user_id: data.userId,
-          name: data.name,
-          phone: data.phone,
-          preferred_currency: data.preferred_currency
-        }, trx);
-
-        // 2. Створюємо рахунок
+        // Після перенесення user-даних в auth_db тут створюємо тільки стартовий рахунок.
         await this.accountsRepo.create({
           user_id: data.userId,
           currency: data.preferred_currency || 'USD',
@@ -42,7 +31,6 @@ export class AccountsService {
         }, trx);
       });
 
-      // Якщо все ок, можна повернути успіх
       rpc.emit (this.loggerClient,PATTERNS.LOGGER.LOG_EVENT, {
         service: SERVICES.AUTH,
         event: 'NEW_USER',
@@ -60,12 +48,10 @@ export class AccountsService {
         payload: data,
       });
 
-      // Надсилаємо сигнал "відкату" в Auth
       rpc.emit (this.authClient,PATTERNS.AUTH.REGISTRATION_FAILED, {
         userId: data.userId,
         reason: errorMessage
       });
-      // Важливо: не кидайте помилку далі, якщо хочете, щоб Nest вважав подію обробленою
     }
   }
 

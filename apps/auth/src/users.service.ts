@@ -1,8 +1,8 @@
 ﻿// users.service.ts
 import * as bcrypt from 'bcrypt';
 import { Knex } from 'knex';
-import { lastValueFrom, firstValueFrom } from 'rxjs';
-import { Injectable, Inject, ConflictException, InternalServerErrorException, Logger } from '@nestjs/common';
+import { firstValueFrom } from 'rxjs';
+import { Injectable, Inject, ConflictException, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { SERVICES, PATTERNS, CreateUserDto, rpc } from '@app/common';
 
@@ -32,7 +32,7 @@ export class UsersService {
   }
 
   async create (dto: CreateUserDto) {
-    let { email, password, role, ...userData } = dto;
+    let { email, password, role, name, phone } = dto;
     if (!role) {
       role = 'user';
     }
@@ -42,17 +42,16 @@ export class UsersService {
         .insert({
           email,
           password: hashedPassword,
-          role
+          role,
+          name,
+          phone,
+          created_at: this.knex.fn.now(),
         })
-        .returning(['id', 'email', 'role']) // Повертаємо все, КРІМ пароля
+        .returning(['id', 'email', 'role', 'name', 'phone']);
       try {
         const result = await firstValueFrom(
           rpc.send (this.accountsClient, PATTERNS.ACCOUNTS.CREATE_PROFILE, {
             userId: newUser.id,
-            name: dto.name,
-            role,
-            email,
-            phone: dto.phone,
             preferred_currency: dto.preferred_currency
           })
         );

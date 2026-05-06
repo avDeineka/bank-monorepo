@@ -7,7 +7,6 @@ import { SERVICES, RABBIT_CONFIG } from '@app/common';
 import { LoggerModule } from '@app/common';
 import { AccountsController } from './accounts.controller';
 import { AccountsService } from './accounts.service';
-import { ProfilesRepository } from './repositories/profiles.repository';
 import { AccountsRepository } from './repositories/accounts.repository';
 
 @Module({
@@ -25,7 +24,6 @@ import { AccountsRepository } from './repositories/accounts.repository';
   controllers: [AccountsController],
   providers: [
     AccountsService,
-    ProfilesRepository,
     AccountsRepository,
   ],
 })

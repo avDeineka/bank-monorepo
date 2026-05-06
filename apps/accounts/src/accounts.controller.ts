@@ -26,7 +26,7 @@ export class AccountsController {
   @MessagePattern({ cmd: PATTERNS.ACCOUNTS.CREATE_PROFILE })
   async handleCreateProfile(@Payload() data: any) {
     try {
-      this.logger.log(`Creating profile for user ${data.userId} ${data.name} ${data.role} ${data.email}`);
+      this.logger.log(`Creating starter account for user ${data.userId}`);
       return await this.accountsService.handleRegistration (data);
     } catch (error: any) {
       // Якщо це помилка Postgres (unique constraint), витягуємо чистий текст

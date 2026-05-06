@@ -15,7 +15,7 @@ import { JwtStrategy } from '../jwt.strategy';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get('JWT_SECRET'),
-        signOptions: { expiresIn: '1h' },
+        //signOptions: { expiresIn: '1h' },
       }),
     }),
     RmqModule.register(SERVICES.ACCOUNTS, RABBIT_CONFIG.ACCOUNTS_QUEUE),

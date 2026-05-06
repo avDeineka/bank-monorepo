@@ -16,7 +16,7 @@ export class CreateUserDto {
   @IsIn(['admin', 'user'], { message: 'Role must be either admin or user' })
   readonly role?: string;
 
-  // Поля для таблиці profiles
+  // Поля зберігаються в auth_db.users, а preferred_currency використовується для стартового рахунку.
   @IsString()
   @IsNotEmpty({ message: "Name is required" })
   @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)

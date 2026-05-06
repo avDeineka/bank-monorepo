@@ -15,7 +15,7 @@ import { UsersModule } from './users.module'; // Щоб шукати юзера
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '1h' },
+        signOptions: { expiresIn: '12h' },
       }),
       inject: [ConfigService],
     }),
