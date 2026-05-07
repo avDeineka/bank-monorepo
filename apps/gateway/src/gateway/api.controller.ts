@@ -1,6 +1,8 @@
 ﻿// gateway/api.controller.ts
 import { Controller, Inject, Get, Post, Body, Param, Req, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { TransferDto } from '@app/common';
 import { SERVICES, PATTERNS, CreateUserDto, LoginDto, rpc } from '@app/common';
 
@@ -11,9 +13,18 @@ export class ApiController {
     @Inject(SERVICES.AUTH) private authService: any,
   ) {}
 
+  private readonly version = JSON.parse(
+    readFileSync(join(process.cwd(), 'package.json'), 'utf-8'),
+  ).version;
+
   @Get('ping')
   accountsPing() {
     return rpc.send (this.accountsClient, PATTERNS.SYSTEM.PING, { hello: 'from gateway' });
+  }
+
+  @Get('version')
+  getVersion() {
+    return { version: this.version };
   }
 
   @UseGuards(AuthGuard('jwt'))
