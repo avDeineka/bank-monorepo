@@ -20,7 +20,7 @@ export class AuthService {
 
     // 2. Порівнюємо введений пароль з хешем
     if (user && await bcrypt.compare(pass, user.password)) {
-      rpc.emit (this.loggerClient, PATTERNS.LOGGER.LOG_EVENT, {
+      rpc.emit (this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
         service: SERVICES.AUTH,
         event: 'LOGIN',
         payload: { userId: user.id, email: user.email }

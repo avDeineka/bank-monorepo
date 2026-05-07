@@ -1,21 +1,21 @@
 ﻿// libs/common/src/constants/patterns.ts
 export const PATTERNS = {
-  ACCOUNTS: {
-    PING: 'accounts.ping',
-    CREATE_PROFILE: 'accounts.create_profile',
-    GET_BALANCE: 'accounts.get_balance',
-    CREATE: 'accounts.create',
-    GET_ALL: 'accounts.get_all',
-    DO_TRANSFER: 'accounts.do_transfer',
+  USER: {
+    LOGIN: 'user.login',
+    REGISTER: 'user.register',
+    CREATED: 'user.created',
+    GET_ALL: 'user.get_all',
+    GET_ONE: 'user.get_one',
   },
-  AUTH: {
-    LOGIN: 'auth.login',
-    REGISTER: 'auth.register',
-    REGISTRATION_FAILED: 'auth.registration_failed',
-    USER: 'auth.user',
-    USERS: 'auth.users',
+  ACCOUNT: {
+    CREATE: 'account.create',
+    CREATED: 'account.created',
+    CREATE_FAILED: 'account.failed',
+    GET_BALANCE: 'account.get_balance',
+    TRANSFER: 'account.transfer',
   },
-  LOGGER: {
-    LOG_EVENT: 'logger.log_event',
+  SYSTEM: {
+    LOGGER: 'system.log_event',
+    PING: 'system.ping',
   }
 };

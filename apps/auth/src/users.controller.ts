@@ -11,23 +11,23 @@ export class UsersController {
   private readonly logger = new Logger(UsersController.name);
 
   // Цей метод відповідатиме на GET /users
-  @MessagePattern({ cmd: PATTERNS.AUTH.USERS })
+  @MessagePattern({ cmd: PATTERNS.USER.GET_ALL })
   findAll() {
     return this.usersService.findAll();
   }
 
   // Цей метод відповідатиме на GET /users/:id
-  @MessagePattern({ cmd: PATTERNS.AUTH.USER })
+  @MessagePattern({ cmd: PATTERNS.USER.GET_ONE })
   findOne(@Payload() id: number) {
     return this.usersService.getUserById(id);
   }
 
-  @MessagePattern({ cmd: PATTERNS.AUTH.REGISTER })
+  @MessagePattern({ cmd: PATTERNS.USER.REGISTER })
   async register(@Payload() createUserDto: CreateUserDto) {
     return await this.usersService.create(createUserDto);
   }
 
-  @EventPattern(PATTERNS.AUTH.REGISTRATION_FAILED)
+  @EventPattern(PATTERNS.ACCOUNT.CREATE_FAILED)
   async handleRegistrationRollback(@Payload() data: { userId: number, reason: string }) {
     this.logger.warn(`🔄 Saga Compensating Action: Deleting user ${data.userId} because of ${data.reason}`);
     await this.usersService.deleteUser(data.userId);

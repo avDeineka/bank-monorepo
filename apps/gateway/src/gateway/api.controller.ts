@@ -13,36 +13,36 @@ export class ApiController {
 
   @Get('ping')
   accountsPing() {
-    return rpc.send (this.accountsClient, PATTERNS.ACCOUNTS.PING, { hello: 'from gateway' });
+    return rpc.send (this.accountsClient, PATTERNS.SYSTEM.PING, { hello: 'from gateway' });
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('users')
   findAll() {
-    return rpc.send(this.authService, PATTERNS.AUTH.USERS, {});
+    return rpc.send(this.authService, PATTERNS.USER.GET_ALL, {});
   }
 
   // Цей метод відповідатиме на GET /users/:id
   @UseGuards(AuthGuard('jwt'))
   @Get('users/:id')
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return rpc.send(this.authService, PATTERNS.AUTH.USER, { id });
+    return rpc.send(this.authService, PATTERNS.USER.GET_ONE, { id });
   }
 
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
-    return rpc.send(this.authService, PATTERNS.AUTH.REGISTER, createUserDto);
+    return rpc.send(this.authService, PATTERNS.USER.REGISTER, createUserDto);
   }
 
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
-    return rpc.send(this.authService, PATTERNS.AUTH.LOGIN, { email: loginDto.email, password: loginDto.password });
+    return rpc.send(this.authService, PATTERNS.USER.LOGIN, { email: loginDto.email, password: loginDto.password });
   }
   
   @UseGuards(AuthGuard('jwt'))
   @Get('balance')
   async getMyBalance(@Req() req) {
-    return rpc.send (this.accountsClient, PATTERNS.ACCOUNTS.GET_BALANCE, { userId: req.user.userId });
+    return rpc.send (this.accountsClient, PATTERNS.ACCOUNT.GET_BALANCE, { userId: req.user.userId });
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -53,6 +53,6 @@ export class ApiController {
   ) {
     const fromUserId = req.user.userId;
     const fullData: TransferDto = { ...body, fromUserId };
-    return rpc.send (this.accountsClient, PATTERNS.ACCOUNTS.DO_TRANSFER, fullData);
+    return rpc.send (this.accountsClient, PATTERNS.ACCOUNT.TRANSFER, fullData);
   }
 }

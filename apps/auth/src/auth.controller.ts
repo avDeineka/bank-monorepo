@@ -8,7 +8,7 @@ import { AuthService } from './auth.service';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @MessagePattern({ cmd: PATTERNS.AUTH.LOGIN })
+  @MessagePattern({ cmd: PATTERNS.USER.LOGIN })
   async login(@Payload() loginDto: LoginDto) {
     return this.authService.login(loginDto.email, loginDto.password);
   }

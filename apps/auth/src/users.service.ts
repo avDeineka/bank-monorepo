@@ -4,7 +4,7 @@ import { Knex } from 'knex';
 import { firstValueFrom } from 'rxjs';
 import { Injectable, Inject, ConflictException, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { SERVICES, PATTERNS, CreateUserDto, rpc } from '@app/common';
+import { SERVICES, PATTERNS, CreateAccountDto, CreateUserDto, rpc } from '@app/common';
 
 @Injectable()
 export class UsersService {
@@ -49,11 +49,13 @@ export class UsersService {
         })
         .returning(['id', 'email', 'role', 'name', 'phone']);
       try {
+        const createAccountDto: CreateAccountDto = {
+          user_id: newUser.id,
+          currency: dto.preferred_currency || 'USD',
+          balance: 100,
+        };
         const result = await firstValueFrom(
-          rpc.send (this.accountsClient, PATTERNS.ACCOUNTS.CREATE_PROFILE, {
-            userId: newUser.id,
-            preferred_currency: dto.preferred_currency
-          })
+          rpc.send(this.accountsClient, PATTERNS.ACCOUNT.CREATE, createAccountDto)
         );
         return result;
       } catch (error) {
@@ -65,7 +67,7 @@ export class UsersService {
         const errorMessage = rpcError === 'no elements in sequence'
           ? 'Phone number already assigned (or service error)'
           : rpcError;
-        this.loggerClient.emit(PATTERNS.LOGGER.LOG_EVENT, {
+        this.loggerClient.emit(PATTERNS.SYSTEM.LOGGER, {
           service: SERVICES.AUTH,
           event: 'SAGA_ROLLBACK',
           payload: { userId: newUser.id, reason: errorMessage }
@@ -76,7 +78,7 @@ export class UsersService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error('❌ Failed to add new user', errorMessage);
-      this.loggerClient.emit(PATTERNS.LOGGER.LOG_EVENT, {
+      this.loggerClient.emit(PATTERNS.SYSTEM.LOGGER, {
         service: SERVICES.AUTH,
         event: 'NEW_USER_FAILED',
         payload: { email, role, errorMessage },

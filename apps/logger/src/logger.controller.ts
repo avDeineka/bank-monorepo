@@ -10,7 +10,7 @@ export class LoggerController {
 
   private readonly logger = new Logger(LoggerController.name);
 
-  @EventPattern (PATTERNS.LOGGER.LOG_EVENT) // EventPattern для .emit()
+  @EventPattern (PATTERNS.SYSTEM.LOGGER) // EventPattern для .emit()
   async handleLogEvent(@Payload() data: any) {
     this.logger.log(`📝 logging event: ${data.event} ${JSON.stringify(data.payload)}`);
 

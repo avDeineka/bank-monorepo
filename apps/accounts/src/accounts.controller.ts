@@ -1,33 +1,26 @@
 ﻿// accounts/src/accounts.controller.ts
 import { Controller, Logger } from '@nestjs/common';
-import { EventPattern, MessagePattern, Payload, RpcException } from '@nestjs/microservices';
-import { TransferDto } from '@app/common';
+import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
+import { CreateAccountDto, TransferDto } from '@app/common';
 import { PATTERNS } from '@app/common';
 import { AccountsService } from './accounts.service';
-
-interface PostgresError extends Error {
-  code?: string;
-  detail?: string;
-  table?: string;
-  constraint?: string;
-}
 
 @Controller()
 export class AccountsController {
   constructor(private readonly accountsService: AccountsService) {}
   private readonly logger = new Logger(AccountsController.name);
 
-  @MessagePattern({ cmd: PATTERNS.ACCOUNTS.PING })
+  @MessagePattern({ cmd: PATTERNS.SYSTEM.PING })
   ping(@Payload() data: any) {
     this.logger.log(`ping receives ${data.hello}`);
     return { status: 'ok', pong: true };
   }
 
-  @MessagePattern({ cmd: PATTERNS.ACCOUNTS.CREATE_PROFILE })
-  async handleCreateProfile(@Payload() data: any) {
+  @MessagePattern({ cmd: PATTERNS.ACCOUNT.CREATE })
+  async createAccount(@Payload() data: CreateAccountDto) {
     try {
-      this.logger.log(`Creating starter account for user ${data.userId}`);
-      return await this.accountsService.handleRegistration (data);
+      this.logger.log(`Creating account for user ${data.user_id} in ${data.currency}`);
+      return await this.accountsService.createAccount(data);
     } catch (error: any) {
       // Якщо це помилка Postgres (unique constraint), витягуємо чистий текст
       const message = error.detail || error.message;
@@ -40,13 +33,13 @@ export class AccountsController {
     }
   }
 
-  @MessagePattern({ cmd: PATTERNS.ACCOUNTS.GET_BALANCE })
+  @MessagePattern({ cmd: PATTERNS.ACCOUNT.GET_BALANCE })
   async get_balance(@Payload() data: { userId: number }) {
     this.logger.log(`user ${data.userId} balance is asked`);
     return this.accountsService.getBalance (data.userId);
   }
 
-  @MessagePattern({ cmd: PATTERNS.ACCOUNTS.DO_TRANSFER })
+  @MessagePattern({ cmd: PATTERNS.ACCOUNT.TRANSFER })
   async handleTransfer(@Payload() data: TransferDto) {
     return this.accountsService.transferMoney (data);
   }

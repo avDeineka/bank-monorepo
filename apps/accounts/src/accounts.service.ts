@@ -1,8 +1,8 @@
 ﻿// accounts/src/accounts.service.ts
-import { Injectable, Inject, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Knex } from 'knex';
-import { TransferDto } from '@app/common';
+import { CreateAccountDto, TransferDto } from '@app/common';
 import { SERVICES, PATTERNS } from '@app/common';
 import { AppLogger, rpc } from '@app/common';
 import { AccountsRepository } from './repositories/accounts.repository';
@@ -12,44 +12,38 @@ export class AccountsService {
   constructor(
     private readonly accountsRepo: AccountsRepository,
     @Inject('KNEX_CONNECTION') private readonly knex: Knex,
-    private readonly logger: AppLogger,  
-    // Ці рядки ОБОV'ЯЗКОВО має бути тут:
+    private readonly logger: AppLogger,
     @Inject(SERVICES.AUTH) private readonly authClient: ClientProxy,
     @Inject(SERVICES.LOGGER) private readonly loggerClient: ClientProxy,
   ) {
     this.logger.setContext(AccountsService.name);
   }
 
-  async handleRegistration (data: any) {
+  async createAccount(data: CreateAccountDto) {
     try {
       await this.knex.transaction(async (trx) => {
-        // Після перенесення user-даних в auth_db тут створюємо тільки стартовий рахунок.
-        await this.accountsRepo.create({
-          user_id: data.userId,
-          currency: data.preferred_currency || 'USD',
-          balance: 100,
-        }, trx);
+        await this.accountsRepo.create(data, trx);
       });
 
-      rpc.emit (this.loggerClient,PATTERNS.LOGGER.LOG_EVENT, {
-        service: SERVICES.AUTH,
-        event: 'NEW_USER',
+      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
+        service: SERVICES.ACCOUNTS,
+        event: 'ACCOUNT_CREATED',
         payload: data,
       });
-      return { status: 'success' };
 
+      return { status: 'success' };
     } catch (error) {
       // Тепер ми ПРИЗЕМЛИМОСЯ тут
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ SAGA Triggered, Registration in Accounts failed ${errorMessage}`);
-      rpc.emit (this.loggerClient, PATTERNS.LOGGER.LOG_EVENT, {
-        service: SERVICES.AUTH,
-        event: 'NEW_USER_FAILED',
+      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
+        service: SERVICES.ACCOUNTS,
+        event: 'NEW_ACCOUNT_FAILED',
         payload: data,
       });
 
-      rpc.emit (this.authClient,PATTERNS.AUTH.REGISTRATION_FAILED, {
-        userId: data.userId,
+      rpc.emit(this.authClient, PATTERNS.ACCOUNT.CREATE_FAILED, {
+        userId: data.user_id,
         reason: errorMessage
       });
     }
@@ -99,8 +93,8 @@ export class AccountsService {
           .increment('balance', amount);
       });
       
-      rpc.emit(this.loggerClient, PATTERNS.LOGGER.LOG_EVENT, {
-        service: 'accounts',
+      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
+        service: SERVICES.ACCOUNTS,
         event: 'TRANSFER_COMPLETED',
         payload: { from: fromUserId, to: toUserId, amount, status: 'success' }
       });
@@ -108,15 +102,15 @@ export class AccountsService {
       return { status: 'success', message: 'Money transferred' };
     } catch (rawError) {
       const error = rawError instanceof Error ? rawError : new Error(String(rawError));
-      await this.logFailure (fromUserId, toUserId, amount, error.message);
+      await this.logFailure(fromUserId, toUserId, amount, error.message);
       return { status: 'error', message: error.message };
     }
   }
 
   // Допоміжний метод для чистоти коду
   private async logFailure(from: number, to: number, amount: number, reason: string) {
-    rpc.emit(this.loggerClient, PATTERNS.LOGGER.LOG_EVENT, {
-      service: 'accounts',
+    rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
+      service: SERVICES.ACCOUNTS,
       event: 'TRANSFER_FAILED',
       payload: { from, to, amount, reason, timestamp: new Date() }
     });
