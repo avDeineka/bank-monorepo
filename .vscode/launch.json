@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "Gateway (attach)",
-      "type": "pwa-node",
+      "type": "node",
       "request": "attach",
       "port": 9230,
       "address": "localhost",
@@ -16,17 +16,17 @@
         "!**/node_modules/**"
       ],
       "outFiles": [
-        "${workspaceFolder}/dist/apps/gateway/**/*.js"
+        "${workspaceFolder}/dist/gateway/src/**/*.js"
       ],
       "sourceMapPathOverrides": {
-        "/app/dist/apps/gateway/main.js.map": "${workspaceFolder}/dist/apps/gateway/main.js.map",
+        "/app/dist/apps/gateway/*": "${workspaceFolder}/dist/gateway/src/apps/gateway/src/*",
         "webpack://bank-monorepo/./*": "${workspaceFolder}/*",
         "/app/*": "${workspaceFolder}/*"
       }
     },
     {
       "name": "Accounts (attach)",
-      "type": "pwa-node",
+      "type": "node",
       "request": "attach",
       "port": 9231,
       "address": "localhost",
@@ -39,17 +39,40 @@
         "!**/node_modules/**"
       ],
       "outFiles": [
-        "${workspaceFolder}/dist/apps/accounts/**/*.js"
+        "${workspaceFolder}/dist/accounts/src/**/*.js"
       ],
       "sourceMapPathOverrides": {
-        "/app/dist/apps/accounts/main.js.map": "${workspaceFolder}/dist/apps/accounts/main.js.map",
+        "/app/dist/apps/accounts/*": "${workspaceFolder}/dist/accounts/src/apps/accounts/src/*",
+        "webpack://bank-monorepo/./*": "${workspaceFolder}/*",
+        "/app/*": "${workspaceFolder}/*"
+      }
+    },
+    {
+      "name": "Auth (attach)",
+      "type": "node",
+      "request": "attach",
+      "port": 9233,
+      "address": "localhost",
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "/app",
+      "sourceMaps": true,
+      "smartStep": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist/auth/src/**/*.js"
+      ],
+      "sourceMapPathOverrides": {
+        "/app/dist/apps/auth/*": "${workspaceFolder}/dist/auth/src/apps/auth/src/*",
         "webpack://bank-monorepo/./*": "${workspaceFolder}/*",
         "/app/*": "${workspaceFolder}/*"
       }
     },
     {
       "name": "Logger (attach)",
-      "type": "pwa-node",
+      "type": "node",
       "request": "attach",
       "port": 9232,
       "address": "localhost",
@@ -62,10 +85,10 @@
         "!**/node_modules/**"
       ],
       "outFiles": [
-        "${workspaceFolder}/dist/apps/logger/**/*.js"
+        "${workspaceFolder}/dist/logger/src/**/*.js"
       ],
       "sourceMapPathOverrides": {
-        "/app/dist/apps/logger/main.js.map": "${workspaceFolder}/dist/apps/logger/main.js.map",
+        "/app/dist/apps/logger/*": "${workspaceFolder}/dist/logger/src/apps/logger/src/*",
         "webpack://bank-monorepo/./*": "${workspaceFolder}/*",
         "/app/*": "${workspaceFolder}/*"
       }

@@ -63,6 +63,22 @@ DTO виносяться в `libs/common/src/dto`.
 - У `auth -> accounts` вже є saga-подібний компенсаційний сценарій під час реєстрації юзера
 - При рефакторингах account creation не можна випадково викидати saga-поведінку, якщо задача лише в перейменуванні або узагальненні методу
 
+## Debugging
+
+- Для локального attach-debug актуальним вважається `docker-compose.debug.yml`
+- Контейнери запускаються через `docker compose -f docker-compose.debug.yml up --build`
+- VS Code attach-конфіги в `.vscode/launch.json` підключаються до портів:
+  - `gateway`: `9230`
+  - `accounts`: `9231`
+  - `logger`: `9232`
+  - `auth`: `9233`
+- Debug build (`npm run build:debug`, webpack builder) у цьому репо генерує артефакти не в `dist/apps/...`, а в `dist/<service>/src/...`
+- Якщо breakpoints стають `Unbound`, спочатку перевіряти:
+  - `outFiles` у `.vscode/launch.json`
+  - `sourceMapPathOverrides`
+  - чи контейнер зібраний саме в debug-режимі
+  - чи після змін у `.vscode/launch.json` було `Developer: Reload Window`
+
 ## Change Checklist
 
 Перед завершенням змін перевіряти:
