@@ -12,4 +12,5 @@ export * from './logger/app-logger.service';
 export * from './logger/logger.module';
 export * from './modules/rmq.module';
 export * from './trace-storage';
+export * from './utils/postgres-error.interface';
 export * from './utils/rpc.utils';

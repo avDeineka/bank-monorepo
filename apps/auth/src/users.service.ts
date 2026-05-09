@@ -4,7 +4,7 @@ import { Knex } from 'knex';
 import { firstValueFrom } from 'rxjs';
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { SERVICES, PATTERNS, CreateAccountDto, CreateUserDto, rpc } from '@app/common';
+import { SERVICES, PATTERNS, CreateAccountDto, CreateUserDto, PostgresError, rpc } from '@app/common';
 
 @Injectable()
 export class UsersService {
@@ -50,7 +50,7 @@ export class UsersService {
         .returning(['id', 'email', 'role', 'name', 'phone']);
     } catch (error) {
       const errorMessage = this.getErrorMessage(error);
-      this.logger.error('❌ Failed to add new user', errorMessage);
+      this.logger.error(`❌ Failed to add new user ${errorMessage}`);
       this.loggerClient.emit(PATTERNS.SYSTEM.LOGGER, {
         service: SERVICES.AUTH,
         event: 'NEW_USER_FAILED',
@@ -69,13 +69,20 @@ export class UsersService {
         rpc.send(this.accountsClient, PATTERNS.ACCOUNT.CREATE, createAccountDto)
       );
     } catch (error) {
-      const rawErrorMessage = this.getErrorMessage(error);
-      const errorMessage = rawErrorMessage === 'no elements in sequence'
-        ? 'Phone number already assigned (or service error)'
-        : rawErrorMessage;
-
-      this.logger.error(`🔴 Saga Compensation: Deleting user ${newUser.id} due to ${errorMessage}`);
-      await this.deleteUser(newUser.id);
+      const errorMessage = this.getErrorMessage(error);
+      this.logger.error(`❌ Failed to add new user ${errorMessage}`);
+      this.logger.error(`🔴 Saga Compensation: Deleting user ${newUser.id}`);
+      try {
+        await this.deleteUser(newUser.id);
+      } catch (rollbackError) {
+        const stack = rollbackError instanceof Error ? rollbackError.stack : 'No stack trace';
+        this.logger.error({
+          message: `‼️ CRITICAL: Failed to delete user ${newUser.id} during rollback`,
+          error: rollbackError,
+          stack,
+        });
+        // Тут можна кинути окремий алярм у систему моніторингу
+      }
       this.loggerClient.emit(PATTERNS.SYSTEM.LOGGER, {
         service: SERVICES.AUTH,
         event: 'SAGA_ROLLBACK',
@@ -91,6 +98,16 @@ export class UsersService {
   }
 
   private getErrorMessage(error: unknown) {
+    const postgresError = this.asPostgresError(error);
+
+    if (postgresError?.code === '23505') {
+      const duplicateField = this.getConstraintField(postgresError.constraint);
+      if (duplicateField) {
+        return `duplicate ${duplicateField} violates unique constraint`;
+      }
+      return 'duplicate value violates unique constraint';
+    }
+
     if (error instanceof Error) {
       return error.message;
     }
@@ -107,5 +124,22 @@ export class UsersService {
       }
     }
     return String(error);
+  }
+
+  private asPostgresError(error: unknown): PostgresError | null {
+    if (typeof error !== 'object' || error === null) {
+      return null;
+    }
+
+    return error as PostgresError;
+  }
+
+  private getConstraintField(constraint?: string) {
+    if (!constraint) {
+      return null;
+    }
+
+    const match = constraint.match(/_(.+?)_key$/);
+    return match?.[1] ?? null;
   }
 }
