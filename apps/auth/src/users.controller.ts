@@ -18,8 +18,8 @@ export class UsersController {
 
   // Цей метод відповідатиме на GET /users/:id
   @MessagePattern({ cmd: PATTERNS.USER.GET_ONE })
-  findOne(@Payload() id: number) {
-    return this.usersService.getUserById(id);
+  findOne(@Payload() payload: { id: number }) {
+    return this.usersService.getUserById(payload.id);
   }
 
   @MessagePattern({ cmd: PATTERNS.USER.REGISTER })

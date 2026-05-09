@@ -1,5 +1,6 @@
 // auth/main.ts
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { RABBIT_CONFIG } from '@app/common';
 import { AppLogger } from '@app/common';
@@ -20,6 +21,11 @@ async function bootstrap() {
   );
   const logger = app.get(AppLogger);
   app.useLogger(logger);
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
   app.useGlobalInterceptors(new RmqTraceInterceptor());
   await app.listen();
   console.log('🚀 Auth Microservice is listening...');

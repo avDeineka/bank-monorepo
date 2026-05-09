@@ -65,9 +65,19 @@ export class UsersService {
         currency: dto.preferred_currency || 'USD',
         balance: 100,
       };
-      return await firstValueFrom(
+      const accountResult = await firstValueFrom(
         rpc.send(this.accountsClient, PATTERNS.ACCOUNT.CREATE, createAccountDto)
       );
+
+      if (!accountResult || accountResult.status !== 'success') {
+        const message =
+          typeof accountResult?.message === 'string'
+            ? accountResult.message
+            : 'Account creation failed';
+        throw new Error(message);
+      }
+
+      return accountResult;
     } catch (error) {
       const errorMessage = this.getErrorMessage(error);
       this.logger.error(`❌ Failed to add new user ${errorMessage}`);

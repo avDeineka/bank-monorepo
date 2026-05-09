@@ -33,7 +33,6 @@ export class AccountsService {
 
       return { status: 'success' };
     } catch (error) {
-      // Тепер ми ПРИЗЕМЛИМОСЯ тут
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`❌ SAGA Triggered, Registration in Accounts failed ${errorMessage}`);
       rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
