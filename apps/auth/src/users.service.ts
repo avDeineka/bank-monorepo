@@ -2,7 +2,7 @@
 import * as bcrypt from 'bcrypt';
 import { Knex } from 'knex';
 import { firstValueFrom } from 'rxjs';
-import { Injectable, Inject, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { SERVICES, PATTERNS, CreateAccountDto, CreateUserDto, rpc } from '@app/common';
 
@@ -37,58 +37,75 @@ export class UsersService {
       role = 'user';
     }
     const hashedPassword = await bcrypt.hash(password, 10);
+    let newUser;
     try {
-      const [newUser] = await this.knex('users')
+      [newUser] = await this.knex('users')
         .insert({
           email,
           password: hashedPassword,
           role,
           name,
           phone,
-          created_at: this.knex.fn.now(),
         })
         .returning(['id', 'email', 'role', 'name', 'phone']);
-      try {
-        const createAccountDto: CreateAccountDto = {
-          user_id: newUser.id,
-          currency: dto.preferred_currency || 'USD',
-          balance: 100,
-        };
-        const result = await firstValueFrom(
-          rpc.send(this.accountsClient, PATTERNS.ACCOUNT.CREATE, createAccountDto)
-        );
-        return result;
-      } catch (error) {
-        const rpcError = error instanceof Error ? error?.message : error;
-        this.logger.error(`🔴 Saga Compensation: Deleting user ${newUser.id} due to ${rpcError}`);
-        // Робимо локальний відкат (Compensating action)
-        await this.deleteUser(newUser.id);
-        // Логуємо провал для аналітики
-        const errorMessage = rpcError === 'no elements in sequence'
-          ? 'Phone number already assigned (or service error)'
-          : rpcError;
-        this.loggerClient.emit(PATTERNS.SYSTEM.LOGGER, {
-          service: SERVICES.AUTH,
-          event: 'SAGA_ROLLBACK',
-          payload: { userId: newUser.id, reason: errorMessage }
-        });
-        // Кидаємо чесну помилку на фронтенд
-        throw new ConflictException (errorMessage || 'Registration failed');
-      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = this.getErrorMessage(error);
       this.logger.error('❌ Failed to add new user', errorMessage);
       this.loggerClient.emit(PATTERNS.SYSTEM.LOGGER, {
         service: SERVICES.AUTH,
         event: 'NEW_USER_FAILED',
         payload: { email, role, errorMessage },
       });
-      return { success: false, message: errorMessage };
+      throw new Error(errorMessage || 'Registration failed');
+    }
+
+    try {
+      const createAccountDto: CreateAccountDto = {
+        user_id: newUser.id,
+        currency: dto.preferred_currency || 'USD',
+        balance: 100,
+      };
+      return await firstValueFrom(
+        rpc.send(this.accountsClient, PATTERNS.ACCOUNT.CREATE, createAccountDto)
+      );
+    } catch (error) {
+      const rawErrorMessage = this.getErrorMessage(error);
+      const errorMessage = rawErrorMessage === 'no elements in sequence'
+        ? 'Phone number already assigned (or service error)'
+        : rawErrorMessage;
+
+      this.logger.error(`🔴 Saga Compensation: Deleting user ${newUser.id} due to ${errorMessage}`);
+      await this.deleteUser(newUser.id);
+      this.loggerClient.emit(PATTERNS.SYSTEM.LOGGER, {
+        service: SERVICES.AUTH,
+        event: 'SAGA_ROLLBACK',
+        payload: { userId: newUser.id, reason: errorMessage }
+      });
+      throw new Error(errorMessage || 'Registration failed');
     }
   }
 
   async deleteUser (userId: number) { // аварійний випадок, коли реєстріція пройшла неуспішно
     const result = await this.knex('users').where({ id: userId }).delete();
     return result;
+  }
+
+  private getErrorMessage(error: unknown) {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'object' && error !== null && 'message' in error) {
+      const message = (error as { message?: unknown }).message;
+      if (typeof message === 'string') {
+        return message;
+      }
+      if (typeof message === 'object' && message !== null && 'message' in message) {
+        const nestedMessage = (message as { message?: unknown }).message;
+        if (typeof nestedMessage === 'string') {
+          return nestedMessage;
+        }
+      }
+    }
+    return String(error);
   }
 }

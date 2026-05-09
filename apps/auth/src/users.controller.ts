@@ -1,6 +1,6 @@
 ﻿// users.controller.ts
 import { Controller, Logger } from '@nestjs/common';
-import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import { PATTERNS, CreateUserDto } from '@app/common';
 import { UsersService } from './users.service';
 
@@ -24,7 +24,16 @@ export class UsersController {
 
   @MessagePattern({ cmd: PATTERNS.USER.REGISTER })
   async register(@Payload() createUserDto: CreateUserDto) {
-    return await this.usersService.create(createUserDto);
+    try {
+      return await this.usersService.create(createUserDto);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new RpcException({
+        code: 'REGISTRATION_FAILED',
+        message,
+        statusCode: 409,
+      });
+    }
   }
 
   @EventPattern(PATTERNS.ACCOUNT.CREATE_FAILED)
