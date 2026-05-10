@@ -20,11 +20,11 @@ export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
   async findAll() {
-    return await this.knex("users").select('id','email','role');
+    return await this.knex("users").select('id','name','email','phone','role');
   }
 
   async getUserById(id: number) {
-    return await this.knex("users").first('id','email').where({ id });
+    return await this.knex("users").first('id','name','email','phone','role').where({ id });
   }
 
   async findByEmail(email: string) {

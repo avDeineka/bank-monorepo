@@ -37,7 +37,8 @@ export class ApiController {
   }
 
   // Цей метод відповідатиме на GET /users/:id
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
   @Get('users/:id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return rpc.send(this.authService, PATTERNS.USER.GET_ONE, { id });
@@ -53,6 +54,12 @@ export class ApiController {
     return rpc.send(this.authService, PATTERNS.USER.LOGIN, { email: loginDto.email, password: loginDto.password });
   }
   
+  @UseGuards(AuthGuard('jwt'))
+  @Get('me')
+  me(@Req() req) {
+    return rpc.send(this.authService, PATTERNS.USER.GET_ONE, { id: req.user.userId });
+  }
+
   @UseGuards(AuthGuard('jwt'))
   @Get('balance')
   async getMyBalance(@Req() req) {
