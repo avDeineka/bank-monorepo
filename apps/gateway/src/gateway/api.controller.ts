@@ -5,6 +5,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { TransferDto } from '@app/common';
 import { SERVICES, PATTERNS, CreateUserDto, LoginDto, rpc } from '@app/common';
+import { Roles } from '../roles.decorator';
+import { RolesGuard } from '../roles.guard';
 
 @Controller('api')
 export class ApiController {
@@ -27,7 +29,8 @@ export class ApiController {
     return { version: this.version };
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
   @Get('users')
   findAll() {
     return rpc.send(this.authService, PATTERNS.USER.GET_ALL, {});

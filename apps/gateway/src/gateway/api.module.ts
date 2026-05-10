@@ -7,6 +7,7 @@ import { RmqModule } from '@app/common';
 import { SERVICES, RABBIT_CONFIG } from '@app/common';
 import { ApiController } from './api.controller';
 import { JwtStrategy } from '../jwt.strategy';
+import { RolesGuard } from '../roles.guard';
 
 @Module({
   imports: [
@@ -22,6 +23,6 @@ import { JwtStrategy } from '../jwt.strategy';
     RmqModule.register(SERVICES.AUTH, RABBIT_CONFIG.AUTH_QUEUE),
   ],
   controllers: [ApiController],
-  providers: [JwtStrategy],
+  providers: [JwtStrategy, RolesGuard],
 })
 export class ApiModule {}
