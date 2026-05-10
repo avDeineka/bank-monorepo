@@ -4,7 +4,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { TransferDto } from '@app/common';
-import { SERVICES, PATTERNS, CreateUserDto, LoginDto, rpc } from '@app/common';
+import { SERVICES, PATTERNS, CreateUserDto, LoginDto, ROLES, SetRoleDto, rpc } from '@app/common';
 import { Roles } from '../roles.decorator';
 import { RolesGuard } from '../roles.guard';
 
@@ -30,7 +30,7 @@ export class ApiController {
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('admin')
+  @Roles(ROLES.ADMIN)
   @Get('users')
   findAll() {
     return rpc.send(this.authService, PATTERNS.USER.GET_ALL, {});
@@ -38,7 +38,7 @@ export class ApiController {
 
   // Цей метод відповідатиме на GET /users/:id
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('admin')
+  @Roles(ROLES.ADMIN)
   @Get('users/:id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return rpc.send(this.authService, PATTERNS.USER.GET_ONE, { id });
@@ -47,6 +47,13 @@ export class ApiController {
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
     return rpc.send(this.authService, PATTERNS.USER.REGISTER, createUserDto);
+  }
+
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(ROLES.ADMIN)
+  @Post('set-role')
+  async setRole(@Body() setRoleDto: SetRoleDto) {
+    return rpc.send(this.authService, PATTERNS.USER.SET_ROLE, setRoleDto);
   }
 
   @Post('login')

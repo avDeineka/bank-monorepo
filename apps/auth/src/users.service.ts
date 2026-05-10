@@ -2,9 +2,9 @@
 import * as bcrypt from 'bcrypt';
 import { Knex } from 'knex';
 import { firstValueFrom } from 'rxjs';
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { SERVICES, PATTERNS, CreateAccountDto, CreateUserDto, PostgresError, rpc } from '@app/common';
+import { SERVICES, PATTERNS, CreateAccountDto, CreateUserDto, PostgresError, ROLES, SetRoleDto, rpc } from '@app/common';
 
 @Injectable()
 export class UsersService {
@@ -32,10 +32,8 @@ export class UsersService {
   }
 
   async create (dto: CreateUserDto) {
-    let { email, password, role, name, phone } = dto;
-    if (!role) {
-      role = 'user';
-    }
+    const { email, password, name, phone } = dto;
+    const role = ROLES.USER;
     const hashedPassword = await bcrypt.hash(password, 10);
     let newUser;
     try {
@@ -100,6 +98,19 @@ export class UsersService {
       });
       throw new Error(errorMessage || 'Registration failed');
     }
+  }
+
+  async setRole(dto: SetRoleDto) {
+    const [updatedUser] = await this.knex('users')
+      .where({ email: dto.email })
+      .update({ role: dto.role })
+      .returning(['id', 'email', 'role', 'name', 'phone']);
+
+    if (!updatedUser) {
+      throw new NotFoundException(`User with email ${dto.email} not found`);
+    }
+
+    return updatedUser;
   }
 
   async deleteUser (userId: number) { // аварійний випадок, коли реєстріція пройшла неуспішно

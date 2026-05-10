@@ -1,7 +1,7 @@
 ﻿// users.controller.ts
-import { Controller, Logger } from '@nestjs/common';
+import { Controller, Logger, NotFoundException } from '@nestjs/common';
 import { EventPattern, MessagePattern, Payload, RpcException } from '@nestjs/microservices';
-import { PATTERNS, CreateUserDto } from '@app/common';
+import { PATTERNS, CreateUserDto, SetRoleDto } from '@app/common';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -32,6 +32,20 @@ export class UsersController {
         code: 'REGISTRATION_FAILED',
         message,
         statusCode: 409,
+      });
+    }
+  }
+
+  @MessagePattern({ cmd: PATTERNS.USER.SET_ROLE })
+  async setRole(@Payload() setRoleDto: SetRoleDto) {
+    try {
+      return await this.usersService.setRole(setRoleDto);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new RpcException({
+        code: 'SET_ROLE_FAILED',
+        message,
+        statusCode: error instanceof NotFoundException ? 404 : 400,
       });
     }
   }

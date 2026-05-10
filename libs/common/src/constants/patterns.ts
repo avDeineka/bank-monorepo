@@ -3,6 +3,7 @@ export const PATTERNS = {
   USER: {
     LOGIN: 'user.login',
     REGISTER: 'user.register',
+    SET_ROLE: 'user.set_role',
     CREATED: 'user.created',
     GET_ALL: 'user.get_all',
     GET_ONE: 'user.get_one',
