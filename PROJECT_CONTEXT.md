@@ -27,6 +27,7 @@
 
 - `PATTERNS.USER.REGISTER`
 - `PATTERNS.USER.LOGIN`
+- `PATTERNS.USER.SET_ROLE`
 - `PATTERNS.USER.GET_ALL`
 - `PATTERNS.USER.GET_ONE`
 - `PATTERNS.ACCOUNT.CREATE`
@@ -37,10 +38,14 @@
 - `PATTERNS.SYSTEM.PING`
 
 DTO виносяться в `libs/common/src/dto`.
+Спільні role-константи (`ROLES.USER`, `ROLES.ADMIN`) винесені в `libs/common/src/constants/roles.ts`.
 
 ## Current Domain Shape
 
-- `CreateUserDto` містить `preferred_currency`
+- `CreateUserDto` містить `preferred_currency` і більше не приймає `role`
+- `SetRoleDto` містить:
+  - `email`
+  - `role`
 - `CreateAccountDto` містить:
   - `user_id`
   - `currency`
@@ -50,6 +55,8 @@ DTO виносяться в `libs/common/src/dto`.
 ## Important Decisions
 
 - Не виводити нові внутрішні account-операції в `gateway`, поки явно не домовимось
+- Реєстрація через `POST /api/register` завжди створює юзера з роллю `ROLES.USER`
+- Зміна ролі винесена в окремий `POST /api/set-role`, доступний лише для `admin`
 - При зміні message contract треба синхронно перевіряти:
   - `libs/common`
   - producer
