@@ -8,6 +8,7 @@ export * from './database/database.module';
 export * from './dto/create-account.dto';
 export * from './dto/create-user.dto';
 export * from './dto/login.dto';
+export * from './dto/open-account.dto';
 export * from './dto/set-role.dto';
 export * from './dto/transfer.dto';
 export * from './interceptors/rmq-trace.interceptor';

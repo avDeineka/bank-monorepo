@@ -49,7 +49,8 @@ CREATE TABLE IF NOT EXISTS accounts (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     balance BIGINT DEFAULT 100 NOT NULL,
-    currency VARCHAR NOT NULL
+    currency VARCHAR NOT NULL,
+    CONSTRAINT accounts_user_currency_key UNIQUE (user_id, currency)
 );
 CREATE TABLE IF NOT EXISTS transfers (
     id SERIAL PRIMARY KEY,

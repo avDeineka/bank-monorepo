@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { SUPPORTED_CURRENCIES } from '../constants/currencies';
 
 export class CreateAccountDto {
@@ -10,6 +10,7 @@ export class CreateAccountDto {
   @IsIn(SUPPORTED_CURRENCIES)
   currency!: string;
 
+  @IsOptional()
   @IsNumber()
-  balance!: number;
+  balance?: number;
 }

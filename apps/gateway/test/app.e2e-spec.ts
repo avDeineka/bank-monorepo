@@ -206,4 +206,40 @@ describe('AppController (e2e)', () => {
 
     expect(authClientMock.send).not.toHaveBeenCalled();
   });
+
+  it('/api/accounts (POST) creates account for current user', async () => {
+    const token = createToken({ sub: 7, email: 'user@example.com', role: ROLES.USER });
+    const response = { status: 'success' };
+
+    accountsClientMock.send.mockReturnValue(of(response));
+
+    await request(app.getHttpServer())
+      .post('/api/accounts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ currency: 'EUR' })
+      .expect(201)
+      .expect(response);
+
+    expect(accountsClientMock.send).toHaveBeenCalledWith(
+      { cmd: PATTERNS.ACCOUNT.CREATE },
+      expect.objectContaining({
+        data: {
+          user_id: 7,
+          currency: 'EUR',
+        },
+      }),
+    );
+  });
+
+  it('/api/accounts (POST) rejects user_id and balance in body', async () => {
+    const token = createToken({ sub: 7, email: 'user@example.com', role: ROLES.USER });
+
+    await request(app.getHttpServer())
+      .post('/api/accounts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ currency: 'EUR', user_id: 999, balance: 500 })
+      .expect(400);
+
+    expect(accountsClientMock.send).not.toHaveBeenCalled();
+  });
 });

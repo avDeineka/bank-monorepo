@@ -4,7 +4,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { TransferDto } from '@app/common';
-import { SERVICES, PATTERNS, CreateUserDto, LoginDto, ROLES, SetRoleDto, rpc } from '@app/common';
+import { SERVICES, PATTERNS, CreateAccountDto, CreateUserDto, LoginDto, OpenAccountDto, ROLES, SetRoleDto, rpc } from '@app/common';
 import { Roles } from '../roles.decorator';
 import { RolesGuard } from '../roles.guard';
 
@@ -71,6 +71,20 @@ export class ApiController {
   @Get('balance')
   async getMyBalance(@Req() req) {
     return rpc.send(this.accountsClient, PATTERNS.ACCOUNT.GET_ACCOUNTS, { userId: req.user.userId });
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('accounts')
+  async createAccount(
+    @Req() req,
+    @Body() body: OpenAccountDto,
+  ) {
+    const createAccountDto: CreateAccountDto = {
+      user_id: req.user.userId,
+      currency: body.currency,
+    };
+
+    return rpc.send(this.accountsClient, PATTERNS.ACCOUNT.CREATE, createAccountDto);
   }
 
   @UseGuards(AuthGuard('jwt'))
