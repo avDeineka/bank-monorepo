@@ -33,10 +33,10 @@ export class AccountsController {
     }
   }
 
-  @MessagePattern({ cmd: PATTERNS.ACCOUNT.GET_BALANCE })
-  async get_balance(@Payload() data: { userId: number }) {
-    this.logger.log(`user ${data.userId} balance is asked`);
-    return this.accountsService.getBalance (data.userId);
+  @MessagePattern({ cmd: PATTERNS.ACCOUNT.GET_ACCOUNTS })
+  async getAccounts(@Payload() data: { userId: number }) {
+    this.logger.log(`user ${data.userId} accounts are asked`);
+    return this.accountsService.getAccounts(data.userId);
   }
 
   @MessagePattern({ cmd: PATTERNS.ACCOUNT.TRANSFER })

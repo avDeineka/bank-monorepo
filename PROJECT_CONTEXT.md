@@ -32,7 +32,7 @@
 - `PATTERNS.USER.GET_ONE`
 - `PATTERNS.ACCOUNT.CREATE`
 - `PATTERNS.ACCOUNT.CREATE_FAILED`
-- `PATTERNS.ACCOUNT.GET_BALANCE`
+- `PATTERNS.ACCOUNT.GET_ACCOUNTS`
 - `PATTERNS.ACCOUNT.TRANSFER`
 - `PATTERNS.SYSTEM.LOGGER`
 - `PATTERNS.SYSTEM.PING`
@@ -50,6 +50,12 @@ DTO виносяться в `libs/common/src/dto`.
   - `user_id`
   - `currency`
   - `balance`
+- Підтримувані валюти винесені в `libs/common/src/constants/currencies.ts`:
+  - `USD`
+  - `EUR`
+  - `GBP`
+  - `CHF`
+  - `JPY`
 - `accounts` має вміти створювати акаунт не лише як частину реєстрації
 
 ## Important Decisions
@@ -57,6 +63,7 @@ DTO виносяться в `libs/common/src/dto`.
 - Не виводити нові внутрішні account-операції в `gateway`, поки явно не домовимось
 - Реєстрація через `POST /api/register` завжди створює юзера з роллю `ROLES.USER`
 - Зміна ролі винесена в окремий `POST /api/set-role`, доступний лише для `admin`
+- На сервісі `accounts` користувач може мати не більше одного відкритого рахунку в кожній підтримуваній валюті
 - При зміні message contract треба синхронно перевіряти:
   - `libs/common`
   - producer
@@ -69,6 +76,7 @@ DTO виносяться в `libs/common/src/dto`.
 
 - У `auth -> accounts` вже є saga-подібний компенсаційний сценарій під час реєстрації юзера
 - При рефакторингах account creation не можна випадково викидати saga-поведінку, якщо задача лише в перейменуванні або узагальненні методу
+- `PATTERNS.USER.GET_ONE` тепер повертає профіль юзера разом із масивом `accounts`, який `auth` запитує в `accounts` через `PATTERNS.ACCOUNT.GET_ACCOUNTS`
 
 ## Debugging
 

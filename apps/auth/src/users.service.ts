@@ -18,13 +18,29 @@ export class UsersService {
   ) { }
 
   private readonly logger = new Logger(UsersService.name);
+  private readonly userSelection = ['id', 'name', 'email', 'phone', 'role'] as const;
 
   async findAll() {
-    return await this.knex("users").select('id','name','email','phone','role');
+    return await this.knex('users').select(...this.userSelection);
   }
 
   async getUserById(id: number) {
-    return await this.knex("users").first('id','name','email','phone','role').where({ id });
+    const user = await this.knex('users')
+      .first(...this.userSelection)
+      .where({ id });
+
+    if (!user) {
+      return null;
+    }
+
+    const accounts = await firstValueFrom(
+      rpc.send(this.accountsClient, PATTERNS.ACCOUNT.GET_ACCOUNTS, { userId: id })
+    );
+
+    return {
+      ...user,
+      accounts: Array.isArray(accounts) ? accounts : [],
+    };
   }
 
   async findByEmail(email: string) {
@@ -80,7 +96,7 @@ export class UsersService {
       const errorMessage = this.getErrorMessage(error);
       this.logger.error(`❌ Failed to add new user ${errorMessage}`);
       this.logger.error(`🔴 Saga Compensation: Deleting user ${newUser.id}`);
-      try {
+      /*try {
         await this.deleteUser(newUser.id);
       } catch (rollbackError) {
         const stack = rollbackError instanceof Error ? rollbackError.stack : 'No stack trace';
@@ -90,7 +106,7 @@ export class UsersService {
           stack,
         });
         // Тут можна кинути окремий алярм у систему моніторингу
-      }
+      }*/
       this.loggerClient.emit(PATTERNS.SYSTEM.LOGGER, {
         service: SERVICES.AUTH,
         event: 'SAGA_ROLLBACK',

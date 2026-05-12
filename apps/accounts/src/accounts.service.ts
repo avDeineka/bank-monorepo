@@ -48,10 +48,11 @@ export class AccountsService {
     }
   }
 
-  async getBalance(userId: number) {
-    const account = await this.knex('accounts').where({ user_id: userId }).first();
-    if (!account) return { balance: 0, currency: 'USD' };
-    return { balance: account.balance, currency: account.currency };
+  async getAccounts(user_id: number) {
+    return this.knex('accounts')
+      .select('id', 'currency', 'balance')
+      .where({ user_id })
+      .orderBy('currency', 'asc');
   }
   
   async transferMoney(data: TransferDto) {

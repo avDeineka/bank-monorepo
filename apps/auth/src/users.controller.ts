@@ -53,6 +53,6 @@ export class UsersController {
   @EventPattern(PATTERNS.ACCOUNT.CREATE_FAILED)
   async handleRegistrationRollback(@Payload() data: { userId: number, reason: string }) {
     this.logger.warn(`🔄 Saga Compensating Action: Deleting user ${data.userId} because of ${data.reason}`);
-    await this.usersService.deleteUser(data.userId);
+    //await this.usersService.deleteUser(data.userId);
   }
 }

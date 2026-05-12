@@ -1,6 +1,7 @@
 ﻿// оновлений create-user.dto.ts
-import { IsString, MinLength, IsEmail, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, MinLength, IsEmail, IsNotEmpty, IsOptional, IsIn } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { SUPPORTED_CURRENCIES } from '../constants/currencies';
 
 export class CreateUserDto {
   @IsEmail({}, { message: "Invalid email format" })
@@ -26,5 +27,6 @@ export class CreateUserDto {
 
   @IsString()
   @IsOptional()
+  @IsIn(SUPPORTED_CURRENCIES)
   preferred_currency?: string = 'USD';
 }

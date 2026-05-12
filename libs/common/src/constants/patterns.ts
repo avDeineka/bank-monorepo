@@ -12,7 +12,7 @@ export const PATTERNS = {
     CREATE: 'account.create',
     CREATED: 'account.created',
     CREATE_FAILED: 'account.failed',
-    GET_BALANCE: 'account.get_balance',
+    GET_ACCOUNTS: 'account.get_accounts',
     TRANSFER: 'account.transfer',
   },
   SYSTEM: {

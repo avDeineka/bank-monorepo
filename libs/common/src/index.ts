@@ -3,6 +3,7 @@ export * from './common.service';
 export * from './constants/services';
 export * from './constants/patterns';
 export * from './constants/roles';
+export * from './constants/currencies';
 export * from './database/database.module';
 export * from './dto/create-account.dto';
 export * from './dto/create-user.dto';

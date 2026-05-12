@@ -70,7 +70,7 @@ export class ApiController {
   @UseGuards(AuthGuard('jwt'))
   @Get('balance')
   async getMyBalance(@Req() req) {
-    return rpc.send (this.accountsClient, PATTERNS.ACCOUNT.GET_BALANCE, { userId: req.user.userId });
+    return rpc.send(this.accountsClient, PATTERNS.ACCOUNT.GET_ACCOUNTS, { userId: req.user.userId });
   }
 
   @UseGuards(AuthGuard('jwt'))
