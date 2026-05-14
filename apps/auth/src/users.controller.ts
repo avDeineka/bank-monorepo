@@ -1,7 +1,7 @@
 ﻿// users.controller.ts
 import { Controller, Logger, NotFoundException } from '@nestjs/common';
 import { EventPattern, MessagePattern, Payload, RpcException } from '@nestjs/microservices';
-import { PATTERNS, CreateUserDto, SetRoleDto } from '@app/common';
+import { PATTERNS, CreateUserDto, getErrorMessage, SetRoleDto } from '@app/common';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -27,7 +27,7 @@ export class UsersController {
     try {
       return await this.usersService.create(createUserDto);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = getErrorMessage(error);
       throw new RpcException({
         code: 'REGISTRATION_FAILED',
         message,
@@ -41,7 +41,7 @@ export class UsersController {
     try {
       return await this.usersService.setRole(setRoleDto);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = getErrorMessage(error);
       throw new RpcException({
         code: 'SET_ROLE_FAILED',
         message,

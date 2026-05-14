@@ -3,8 +3,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Knex } from 'knex';
 import { CreateAccountDto, TransferDto } from '@app/common';
-import { SERVICES, PATTERNS } from '@app/common';
-import { AppLogger, rpc } from '@app/common';
+import { SERVICES, PATTERNS, AppLogger, getErrorMessage, rpc } from '@app/common';
 import { AccountsRepository } from './repositories/accounts.repository';
 
 @Injectable()
@@ -33,18 +32,18 @@ export class AccountsService {
 
       return { status: 'success' };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`❌ SAGA Triggered, Registration in Accounts failed ${errorMessage}`);
+      const errorMessage = getErrorMessage (error);
+      this.logger.error(`❌ SAGA Triggered, Accounts failed ${errorMessage}`);
       rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
         service: SERVICES.ACCOUNTS,
         event: 'NEW_ACCOUNT_FAILED',
         payload: data,
       });
-
       rpc.emit(this.authClient, PATTERNS.ACCOUNT.CREATE_FAILED, {
         userId: data.user_id,
         reason: errorMessage
       });
+      throw error;
     }
   }
 

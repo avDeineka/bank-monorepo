@@ -4,7 +4,7 @@ import { Knex } from 'knex';
 import { firstValueFrom } from 'rxjs';
 import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { SERVICES, PATTERNS, CreateAccountDto, CreateUserDto, PostgresError, ROLES, SetRoleDto, rpc } from '@app/common';
+import { SERVICES, PATTERNS, ROLES, CreateAccountDto, CreateUserDto, getErrorMessage, SetRoleDto, rpc } from '@app/common';
 
 @Injectable()
 export class UsersService {
@@ -63,14 +63,14 @@ export class UsersService {
         })
         .returning(['id', 'email', 'role', 'name', 'phone']);
     } catch (error) {
-      const errorMessage = this.getErrorMessage(error);
+      const errorMessage = getErrorMessage(error);
       this.logger.error(`❌ Failed to add new user ${errorMessage}`);
       this.loggerClient.emit(PATTERNS.SYSTEM.LOGGER, {
         service: SERVICES.AUTH,
         event: 'NEW_USER_FAILED',
         payload: { email, role, errorMessage },
       });
-      throw new Error(errorMessage || 'Registration failed');
+      throw error;
     }
 
     try {
@@ -93,7 +93,7 @@ export class UsersService {
 
       return accountResult;
     } catch (error) {
-      const errorMessage = this.getErrorMessage(error);
+      const errorMessage = getErrorMessage(error);
       this.logger.error(`❌ Failed to add new user ${errorMessage}`);
       this.logger.error(`🔴 Saga Compensation: Deleting user ${newUser.id}`);
       /*try {
@@ -112,7 +112,7 @@ export class UsersService {
         event: 'SAGA_ROLLBACK',
         payload: { userId: newUser.id, reason: errorMessage }
       });
-      throw new Error(errorMessage || 'Registration failed');
+      throw error;
     }
   }
 
@@ -132,51 +132,5 @@ export class UsersService {
   async deleteUser (userId: number) { // аварійний випадок, коли реєстріція пройшла неуспішно
     const result = await this.knex('users').where({ id: userId }).delete();
     return result;
-  }
-
-  private getErrorMessage(error: unknown) {
-    const postgresError = this.asPostgresError(error);
-
-    if (postgresError?.code === '23505') {
-      const duplicateField = this.getConstraintField(postgresError.constraint);
-      if (duplicateField) {
-        return `duplicate ${duplicateField} violates unique constraint`;
-      }
-      return 'duplicate value violates unique constraint';
-    }
-
-    if (error instanceof Error) {
-      return error.message;
-    }
-    if (typeof error === 'object' && error !== null && 'message' in error) {
-      const message = (error as { message?: unknown }).message;
-      if (typeof message === 'string') {
-        return message;
-      }
-      if (typeof message === 'object' && message !== null && 'message' in message) {
-        const nestedMessage = (message as { message?: unknown }).message;
-        if (typeof nestedMessage === 'string') {
-          return nestedMessage;
-        }
-      }
-    }
-    return String(error);
-  }
-
-  private asPostgresError(error: unknown): PostgresError | null {
-    if (typeof error !== 'object' || error === null) {
-      return null;
-    }
-
-    return error as PostgresError;
-  }
-
-  private getConstraintField(constraint?: string) {
-    if (!constraint) {
-      return null;
-    }
-
-    const match = constraint.match(/_(.+?)_key$/);
-    return match?.[1] ?? null;
   }
 }
