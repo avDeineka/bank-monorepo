@@ -12,7 +12,7 @@ export class TransferDto {
   toAccountId!: number;
 
   @IsInt()
-  @IsPositive({ message: 'Сума має бути більшою за нуль' })
+  @IsPositive({ message: 'The amount must be greater than zero' })
   amount!: number;
 
   @IsString()

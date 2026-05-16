@@ -1,7 +1,7 @@
 ﻿// accounts/src/accounts.controller.ts
 import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
-import { CreateAccountDto, TransferDto, getErrorMessage, PATTERNS } from '@app/common';
+import { CreateAccountDto, TransferDto, getErrorMessage, PATTERNS, AppError } from '@app/common';
 import { AccountsService } from './accounts.service';
 
 @Controller()
@@ -21,11 +21,8 @@ export class AccountsController {
       this.logger.log(`Creating account for user ${data.user_id} in ${data.currency}`);
       return await this.accountsService.createAccount(data);
     } catch (error: any) {
-      const message = getErrorMessage(error);
+      const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Sending to Gateway: ${message}`);
-      if (error.code === '23505') {
-        this.logger.warn(`unique violation`);
-      }
       throw new RpcException({
         code: 'CREATE_ACCOUNT_FAILED',
         message,
@@ -43,7 +40,19 @@ export class AccountsController {
 
   @MessagePattern({ cmd: PATTERNS.ACCOUNT.TRANSFER })
   async handleTransfer(@Payload() data: { fromUserId: number } & TransferDto) {
-    const { fromUserId, ...transferData } = data;
-    return await this.accountsService.transferMoney(fromUserId, transferData);
+    try {
+      const { fromUserId, ...transferData } = data;
+      return await this.accountsService.transferMoney(fromUserId, transferData);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const statusCode = error instanceof AppError ? error.statusCode : 500;
+      this.logger.error(`Error occurred while transferring: ${message}`);
+      throw new RpcException({
+        code: 'TRANSFER_FAILED',
+        message,
+        status: 'error',
+        statusCode,
+      });
+    }
   }
 }

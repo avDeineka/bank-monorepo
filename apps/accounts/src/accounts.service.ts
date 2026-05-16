@@ -3,7 +3,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Knex } from 'knex';
 import { CreateAccountDto, TransferDto } from '@app/common';
-import { SERVICES, PATTERNS, AppLogger, traceStorage, getErrorMessage, rpc } from '@app/common';
+import { SERVICES, PATTERNS, AppError, AppLogger, traceStorage, getErrorMessage, rpc } from '@app/common';
 import { AccountsRepository } from './repositories/accounts.repository';
 
 @Injectable()
@@ -55,36 +55,45 @@ export class AccountsService {
   }
   
   async transferMoney(fromUserId: number, data: TransferDto) {
-    let { fromAccountId, toAccountId, amount, currency, purpose } = data;
+    let { fromAccountId, toAccountId, amount, currency } = data;
     try {
       if (amount <= 0) {
-        await this.logFailure(fromAccountId, toAccountId, amount, 'INVALID_AMOUNT');
-        throw new Error('The amount must be greater than zero');
+        throw new AppError('The amount must be greater than zero', 400, 'INVALID_AMOUNT');
+      }
+      if (fromAccountId === toAccountId) {
+        throw new AppError('Cannot transfer to the same account', 400, 'SAME_ACCOUNT');
       }
       const traceId = traceStorage.getStore()?.traceId || null;
       const transfer = await this.knex.transaction(async (trx) => {
-        // 1. Блокуємо та перевіряємо відправника
-        const sender = await trx('accounts')
-          .where({ user_id: fromUserId, id: fromAccountId })
-          .first()
+        // Впорядковуємо ID від меншого до більшого для запобігання Deadlock
+        const lockOrder = [fromAccountId, toAccountId].sort((a, b) => a - b);
+
+        // Блокуємо ОБИДВА рахунки одним махом у правильному порядку
+        const lockedAccounts = await trx('accounts')
+          .whereIn('id', lockOrder)
           .forUpdate();
 
+        // Знаходимо відправника та отримувача з уже заблокованого масиву
+        const sender = lockedAccounts.find(acc => acc.id === fromAccountId);
+        const recipient = lockedAccounts.find(acc => acc.id === toAccountId);
+
+        if (!sender) {
+          throw new AppError('Account not found', 404, 'ACCOUNT_NOT_FOUND');
+        }
+        if (sender.user_id !== fromUserId) {
+          throw new AppError('Unauthorized', 403, 'UNAUTHORIZED');
+        }
         if (!sender || sender.balance < amount) {
-          throw new Error('Insufficient funds or account not found');
+          throw new AppError('Insufficient funds', 422, 'INSUFFICIENT_FUNDS');
         }
 
-        // 2. Перевіряємо отримувача
-        const recipient = await trx('accounts')
-          .where({ id: toAccountId })
-          .first();
-
         if (!recipient) {
-          throw new Error('Recipient not found');
+          throw new AppError('Recipient not found', 404, 'RECIPIENT_NOT_FOUND');
         }
 
         // 3. Перевіряємо валюту
         if (sender.currency !== currency || recipient.currency !== currency) {
-          throw new Error('Currency mismatch');
+          throw new AppError('Currency mismatch', 422, 'CURRENCY_MISMATCH');
         }
 
         // 4. Знімаємо
@@ -98,7 +107,7 @@ export class AccountsService {
           .increment('balance', amount);
 
         // 6. Фіксуємо в історії
-        const [transfer] = await trx('transfers').insert({
+        const [insertedTransfer] = await trx('transfers').insert({
           trace_id: traceId,
           from_account_id: sender.id,
           to_account_id: recipient.id,
@@ -107,6 +116,8 @@ export class AccountsService {
           purpose: data.purpose || null,
           status: 'COMPLETED'
         }).returning('*');
+
+        return insertedTransfer;
       });
       
       rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
@@ -116,22 +127,17 @@ export class AccountsService {
       });
 
       this.logger.log(`✅ Transfer completed: ${fromAccountId} -> ${toAccountId} : ${amount} ${currency}`);
-      console.log(transfer); // Додано для дебагу
       return { status: 'success', transfer };
     
     } catch (rawError) {
       const error = rawError instanceof Error ? rawError : new Error(String(rawError));
-      await this.logFailure(fromAccountId, toAccountId, amount, error.message);
-      return { status: 'error', message: error.message };
+      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
+        service: SERVICES.ACCOUNTS,
+        event: 'TRANSFER_FAILED',
+        payload: { from: fromAccountId, to: toAccountId, amount, currency, status: 'error', message: error.message }
+      });
+      throw error;
     }
   }
 
-  // Допоміжний метод для чистоти коду
-  private async logFailure(from: number, to: number, amount: number, reason: string) {
-    rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
-      service: SERVICES.ACCOUNTS,
-      event: 'TRANSFER_FAILED',
-      payload: { from, to, amount, reason, timestamp: new Date() }
-    });
-  }
 }
