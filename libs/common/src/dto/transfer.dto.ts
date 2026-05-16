@@ -1,20 +1,25 @@
-import { IsIn, IsNumber, IsPositive, IsString, Min } from 'class-validator';
+import { IsIn, IsInt, IsNumber, IsPositive, IsString, Min, IsOptional } from 'class-validator';
 import { SUPPORTED_CURRENCIES } from '../constants/currencies';
 
 export class TransferDto {
-  @IsNumber()
-  @Min(1) // ID користувача має бути валідним
-  fromUserId!: number;
 
-  @IsNumber()
+  @IsInt()
+  @Min(1) // ID рахунку відправника має бути валідним
+  fromAccountId!: number;
+
+  @IsInt()
   @Min(1)
-  toUserId!: number;
+  toAccountId!: number;
 
-  @IsNumber()
+  @IsInt()
   @IsPositive({ message: 'Сума має бути більшою за нуль' })
   amount!: number;
 
   @IsString()
   @IsIn(SUPPORTED_CURRENCIES)
   currency!: string;
+
+  @IsOptional() 
+  @IsString()
+  purpose?: string;
 }

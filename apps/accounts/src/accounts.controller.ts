@@ -42,7 +42,8 @@ export class AccountsController {
   }
 
   @MessagePattern({ cmd: PATTERNS.ACCOUNT.TRANSFER })
-  async handleTransfer(@Payload() data: TransferDto) {
-    return this.accountsService.transferMoney (data);
+  async handleTransfer(@Payload() data: { fromUserId: number } & TransferDto) {
+    const { fromUserId, ...transferData } = data;
+    return await this.accountsService.transferMoney(fromUserId, transferData);
   }
 }

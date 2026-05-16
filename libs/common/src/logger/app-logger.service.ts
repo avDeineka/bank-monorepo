@@ -1,6 +1,6 @@
 ﻿// libs/common/src/logger/app-logger.service.ts
 import { ConsoleLogger, Injectable, Scope } from '@nestjs/common';
-import { traceStorage } from '../trace-storage'; // імпорт із тієї ж ліби
+import { traceStorage } from '../trace-storage';
 
 @Injectable()
 export class AppLogger extends ConsoleLogger {

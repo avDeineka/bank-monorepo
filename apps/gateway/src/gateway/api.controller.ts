@@ -3,8 +3,7 @@ import { Controller, Inject, Get, Post, Body, Param, Req, ParseIntPipe, UseGuard
 import { AuthGuard } from '@nestjs/passport';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { TransferDto } from '@app/common';
-import { SERVICES, PATTERNS, CreateAccountDto, CreateUserDto, LoginDto, OpenAccountDto, ROLES, SetRoleDto, rpc } from '@app/common';
+import { SERVICES, PATTERNS, ROLES, CreateAccountDto, CreateUserDto, LoginDto, OpenAccountDto, SetRoleDto, TransferDto, rpc } from '@app/common';
 import { Roles } from '../roles.decorator';
 import { RolesGuard } from '../roles.guard';
 
@@ -91,10 +90,10 @@ export class ApiController {
   @Post('transfer')
   async transfer(
     @Req() req,
-    @Body() body: Omit<TransferDto, 'fromUserId'> // Беремо DTO, але ігноруємо fromUserId
+    @Body() body: TransferDto
   ) {
     const fromUserId = req.user.userId;
-    const fullData: TransferDto = { ...body, fromUserId };
+    const fullData = { ...body, fromUserId };
     return rpc.send (this.accountsClient, PATTERNS.ACCOUNT.TRANSFER, fullData);
   }
 }

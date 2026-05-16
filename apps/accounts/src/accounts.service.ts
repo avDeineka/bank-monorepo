@@ -3,7 +3,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { Knex } from 'knex';
 import { CreateAccountDto, TransferDto } from '@app/common';
-import { SERVICES, PATTERNS, AppLogger, getErrorMessage, rpc } from '@app/common';
+import { SERVICES, PATTERNS, AppLogger, traceStorage, getErrorMessage, rpc } from '@app/common';
 import { AccountsRepository } from './repositories/accounts.repository';
 
 @Injectable()
@@ -49,22 +49,23 @@ export class AccountsService {
 
   async getAccounts(user_id: number) {
     return this.knex('accounts')
-      .select('id', 'currency', 'balance')
+      .select('id', 'currency', 'balance', 'iban', 'created_at')
       .where({ user_id })
       .orderBy('currency', 'asc');
   }
   
-  async transferMoney(data: TransferDto) {
-    let { fromUserId, toUserId, amount } = data;
+  async transferMoney(fromUserId: number, data: TransferDto) {
+    let { fromAccountId, toAccountId, amount, currency, purpose } = data;
     try {
       if (amount <= 0) {
-        await this.logFailure(fromUserId, toUserId, amount, 'INVALID_AMOUNT');
+        await this.logFailure(fromAccountId, toAccountId, amount, 'INVALID_AMOUNT');
         throw new Error('The amount must be greater than zero');
       }
-      await this.knex.transaction(async (trx) => {
+      const traceId = traceStorage.getStore()?.traceId || null;
+      const transfer = await this.knex.transaction(async (trx) => {
         // 1. Блокуємо та перевіряємо відправника
         const sender = await trx('accounts')
-          .where({ user_id: fromUserId })
+          .where({ user_id: fromUserId, id: fromAccountId })
           .first()
           .forUpdate();
 
@@ -72,36 +73,55 @@ export class AccountsService {
           throw new Error('Insufficient funds or account not found');
         }
 
-        // 2. Знімаємо
-        await trx('accounts')
-          .where({ user_id: fromUserId })
-          .decrement('balance', amount);
-
-        // 3. Перевіряємо отримувача
+        // 2. Перевіряємо отримувача
         const recipient = await trx('accounts')
-          .where({ user_id: toUserId })
+          .where({ id: toAccountId })
           .first();
 
         if (!recipient) {
           throw new Error('Recipient not found');
         }
 
-        // 4. Додаємо
+        // 3. Перевіряємо валюту
+        if (sender.currency !== currency || recipient.currency !== currency) {
+          throw new Error('Currency mismatch');
+        }
+
+        // 4. Знімаємо
         await trx('accounts')
-          .where({ user_id: toUserId })
+          .where({ id: fromAccountId })
+          .decrement('balance', amount);
+
+        // 5. Додаємо
+        await trx('accounts')
+          .where({ id: toAccountId })
           .increment('balance', amount);
+
+        // 6. Фіксуємо в історії
+        const [transfer] = await trx('transfers').insert({
+          trace_id: traceId,
+          from_account_id: sender.id,
+          to_account_id: recipient.id,
+          amount: data.amount,
+          currency: data.currency,
+          purpose: data.purpose || null,
+          status: 'COMPLETED'
+        }).returning('*');
       });
       
       rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
         service: SERVICES.ACCOUNTS,
         event: 'TRANSFER_COMPLETED',
-        payload: { from: fromUserId, to: toUserId, amount, status: 'success' }
+        payload: { from: fromAccountId, to: toAccountId, amount, status: 'success' }
       });
 
-      return { status: 'success', message: 'Money transferred' };
+      this.logger.log(`✅ Transfer completed: ${fromAccountId} -> ${toAccountId} : ${amount} ${currency}`);
+      console.log(transfer); // Додано для дебагу
+      return { status: 'success', transfer };
+    
     } catch (rawError) {
       const error = rawError instanceof Error ? rawError : new Error(String(rawError));
-      await this.logFailure(fromUserId, toUserId, amount, error.message);
+      await this.logFailure(fromAccountId, toAccountId, amount, error.message);
       return { status: 'error', message: error.message };
     }
   }

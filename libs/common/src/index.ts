@@ -12,6 +12,7 @@ export * from './dto/open-account.dto';
 export * from './dto/set-role.dto';
 export * from './dto/transfer.dto';
 export * from './interceptors/rmq-trace.interceptor';
+export * from './filters/rpc-exception.filter';
 export * from './logger/app-logger.service';
 export * from './logger/logger.module';
 export * from './modules/rmq.module';

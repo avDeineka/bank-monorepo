@@ -5,6 +5,7 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { RABBIT_CONFIG } from '@app/common';
 import { AppLogger } from '@app/common';
 import { RmqTraceInterceptor } from '@app/common';
+//import { AllExceptionsRpcFilter } from '@app/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -27,6 +28,7 @@ async function bootstrap() {
     transform: true,
   }));
   app.useGlobalInterceptors(new RmqTraceInterceptor());
+  //app.useGlobalFilters(new AllExceptionsRpcFilter());
   await app.listen();
   console.log('🚀 Auth Microservice is listening...');
 }

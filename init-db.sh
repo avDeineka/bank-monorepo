@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS accounts (
     user_id INTEGER NOT NULL,
     balance BIGINT DEFAULT 100 NOT NULL,
     currency VARCHAR NOT NULL,
+    iban VARCHAR UNIQUE,
+    created_at TIMESTAMP DEFAULT NOW(),
     CONSTRAINT accounts_user_currency_key UNIQUE (user_id, currency)
 );
 CREATE TABLE IF NOT EXISTS transfers (
@@ -59,7 +61,49 @@ CREATE TABLE IF NOT EXISTS transfers (
     to_account_id INTEGER NOT NULL,
     amount BIGINT NOT NULL,
     currency VARCHAR(3) NOT NULL,
-    purpose VARCHAR(255),
-    status VARCHAR(20) DEFAULT 'COMPLETED',
+    purpose VARCHAR,
+    status VARCHAR DEFAULT 'COMPLETED',
     created_at TIMESTAMP DEFAULT NOW()
-);"
+);
+-- 1. Додаємо поле в таблицю (якщо ти перестворюєш схему)
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS iban VARCHAR(12) UNIQUE;
+
+-- 2. Створюємо одну розумну функцію для обох дій
+CREATE OR REPLACE FUNCTION handle_account_iban_logic() 
+RETURNS TRIGGER AS \$\$
+BEGIN
+    -- ЛОГІКА ДЛЯ INSERT (Автоматична генерація)
+    IF TG_OP = 'INSERT' THEN
+        -- Якщо ID ще не присвоєно (наприклад, SERIAL присвоїть його після BEFORE тригера),
+        -- нам потрібно взяти наступне значення із сіквенсу таблиці.
+        -- Припускаємо, що твоє поле називається id.
+        IF NEW.id IS NULL THEN
+            NEW.id := nextval(pg_get_serial_sequence('accounts', 'id'));
+        END IF;
+        
+        -- Збираємо IBAN: UA + 1 (МФО) + ID (доповнений нулями до 9 знаків, разом 12)
+        -- LPAD(строка, довжина, чим заповнити)
+        NEW.iban := 'UA1' || LPAD(NEW.id::text, 9, '0');
+    
+    -- ЛОГІКА ДЛЯ UPDATE (Захист від змін)
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF OLD.iban IS NOT NULL AND OLD.iban <> NEW.iban THEN
+            RAISE EXCEPTION 'IBAN cannot be changed once assigned';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+\$\$ LANGUAGE plpgsql;
+
+-- 3. Вішаємо тригери
+DROP TRIGGER IF EXISTS trg_accounts_iban_bi ON accounts;
+CREATE TRIGGER trg_accounts_iban_bi
+BEFORE INSERT ON accounts
+FOR EACH ROW EXECUTE FUNCTION handle_account_iban_logic();
+
+DROP TRIGGER IF EXISTS trg_accounts_iban_bu ON accounts;
+CREATE TRIGGER trg_accounts_iban_bu
+BEFORE UPDATE OF iban ON accounts
+FOR EACH ROW EXECUTE FUNCTION handle_account_iban_logic();
+"
