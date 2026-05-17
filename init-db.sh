@@ -65,10 +65,7 @@ CREATE TABLE IF NOT EXISTS transfers (
     status VARCHAR DEFAULT 'COMPLETED',
     created_at TIMESTAMP DEFAULT NOW()
 );
--- 1. Додаємо поле в таблицю (якщо ти перестворюєш схему)
-ALTER TABLE accounts ADD COLUMN IF NOT EXISTS iban VARCHAR(12) UNIQUE;
 
--- 2. Створюємо одну розумну функцію для обох дій
 CREATE OR REPLACE FUNCTION handle_account_iban_logic() 
 RETURNS TRIGGER AS \$\$
 BEGIN
@@ -96,7 +93,6 @@ BEGIN
 END;
 \$\$ LANGUAGE plpgsql;
 
--- 3. Вішаємо тригери
 DROP TRIGGER IF EXISTS trg_accounts_iban_bi ON accounts;
 CREATE TRIGGER trg_accounts_iban_bi
 BEFORE INSERT ON accounts
