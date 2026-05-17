@@ -54,17 +54,21 @@ CREATE TABLE IF NOT EXISTS accounts (
     created_at TIMESTAMP DEFAULT NOW(),
     CONSTRAINT accounts_user_currency_key UNIQUE (user_id, currency)
 );
+CREATE INDEX IF NOT EXISTS "idx_accounts_user_id" ON "accounts" ("user_id");
+
 CREATE TABLE IF NOT EXISTS transfers (
     id SERIAL PRIMARY KEY,
-    trace_id UUID NOT NULL,
+    trace_id UUID DEFAULT NULL,
     from_account_id INTEGER NOT NULL,
     to_account_id INTEGER NOT NULL,
     amount BIGINT NOT NULL,
-    currency VARCHAR(3) NOT NULL,
+    currency VARCHAR NOT NULL,
     purpose VARCHAR,
-    status VARCHAR DEFAULT 'COMPLETED',
+    status VARCHAR NOT NULL DEFAULT 'PROCESSING',
     created_at TIMESTAMP DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS "from_account_id" ON "transfers" ("from_account_id");
+CREATE INDEX IF NOT EXISTS "to_account_id" ON "transfers" ("to_account_id");
 
 CREATE OR REPLACE FUNCTION handle_account_iban_logic() 
 RETURNS TRIGGER AS \$\$
