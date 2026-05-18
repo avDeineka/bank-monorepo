@@ -140,7 +140,7 @@ export class UsersService {
         service: SERVICES.AUTH,
         user_id: null,
         event: 'ROLE_CHANGE_FAILED',
-        payload: { role: dto.role, email: dto.email },
+        payload: { role: dto.role, email: dto.email, message: 'User email not found' },
         trace_id: traceId,
       });
       throw new NotFoundException(`User with email ${dto.email} not found`);
