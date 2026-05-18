@@ -3,7 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { JwtService } from '@nestjs/jwt';
-import { SERVICES, PATTERNS, rpc } from '@app/common';
+import { SERVICES, PATTERNS, traceStorage, rpc } from '@app/common';
 import { UsersService } from './users.service';
 
 @Injectable()
@@ -15,6 +15,7 @@ export class AuthService {
   ) {}
 
   async login(email: string, pass: string) {
+    const traceId = traceStorage.getStore()?.traceId || null;
     // 1. Шукаємо юзера в базі через наш Knex-сервіс
     const user = await this.usersService.findByEmail(email);
 
@@ -22,8 +23,10 @@ export class AuthService {
     if (user && await bcrypt.compare(pass, user.password)) {
       rpc.emit (this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
         service: SERVICES.AUTH,
+        user_id: user.id,
         event: 'LOGIN',
-        payload: { userId: user.id, email: user.email }
+        payload: { email: user.email },
+        trace_id: traceId,
       });
       // 3. Якщо все ок, формуємо корисне навантаження (payload)
       const payload = { email: user.email, sub: user.id, role: user.role };

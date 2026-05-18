@@ -4,7 +4,7 @@ import { Knex } from 'knex';
 import { firstValueFrom } from 'rxjs';
 import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { SERVICES, PATTERNS, ROLES, CreateAccountDto, CreateUserDto, getErrorMessage, SetRoleDto, rpc } from '@app/common';
+import { SERVICES, PATTERNS, ROLES, CreateAccountDto, CreateUserDto, getErrorMessage, SetRoleDto, traceStorage, rpc } from '@app/common';
 
 @Injectable()
 export class UsersService {
@@ -48,6 +48,7 @@ export class UsersService {
   }
 
   async create (dto: CreateUserDto) {
+    const traceId = traceStorage.getStore()?.traceId || null;
     const { email, password, name, phone } = dto;
     const role = ROLES.USER;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -62,13 +63,23 @@ export class UsersService {
           phone,
         })
         .returning(['id', 'email', 'role', 'name', 'phone']);
-    } catch (error) {
-      const errorMessage = getErrorMessage(error);
-      this.logger.error(`❌ Failed to add new user ${errorMessage}`);
-      this.loggerClient.emit(PATTERNS.SYSTEM.LOGGER, {
+
+      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
         service: SERVICES.AUTH,
+        user_id: newUser.id,
+        event: 'NEW_USER',
+        payload: { name, email, phone, role },
+        trace_id: traceId,
+      });
+    } catch (error) {
+      const message = getErrorMessage(error);
+      this.logger.error(`❌ Failed to add new user ${message}`);
+      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
+        service: SERVICES.AUTH,
+        user_id: null,
         event: 'NEW_USER_FAILED',
-        payload: { email, role, errorMessage },
+        payload: { email, role, message },
+        trace_id: traceId,
       });
       throw error;
     }
@@ -107,24 +118,40 @@ export class UsersService {
         });
         // Тут можна кинути окремий алярм у систему моніторингу
       }*/
-      this.loggerClient.emit(PATTERNS.SYSTEM.LOGGER, {
+      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, { // unusual case, when user was created but account creation failed, so we have to log it with user_id but with failed event
         service: SERVICES.AUTH,
         event: 'SAGA_ROLLBACK',
-        payload: { userId: newUser.id, reason: errorMessage }
+        payload: { userId: newUser.id, reason: errorMessage },
+        trace_id: traceId,
       });
       throw error;
     }
   }
 
   async setRole(dto: SetRoleDto) {
+    const traceId = traceStorage.getStore()?.traceId || null;
     const [updatedUser] = await this.knex('users')
       .where({ email: dto.email })
       .update({ role: dto.role })
       .returning(['id', 'email', 'role', 'name', 'phone']);
 
     if (!updatedUser) {
+      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
+        service: SERVICES.AUTH,
+        user_id: null,
+        event: 'ROLE_CHANGE_FAILED',
+        payload: { role: dto.role, name: updatedUser.name, email: updatedUser.email },
+        trace_id: traceId,
+      });
       throw new NotFoundException(`User with email ${dto.email} not found`);
     }
+    rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
+      service: SERVICES.AUTH,
+      user_id: updatedUser.id,
+      event: 'ROLE_CHANGED',
+      payload: { role: dto.role, name: updatedUser.name, email: updatedUser.email },
+      trace_id: traceId,
+    });
 
     return updatedUser;
   }

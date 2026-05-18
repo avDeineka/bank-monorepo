@@ -4,7 +4,6 @@ import { ClientProxy } from '@nestjs/microservices';
 import { CreateAccountDto, TransferDto } from '@app/common';
 import { SERVICES, PATTERNS, AppError, AppLogger, getErrorMessage, rpc, traceStorage } from '@app/common';
 import { AccountsRepository } from './repositories/accounts.repository';
-import { use } from 'passport';
 
 @Injectable()
 export class AccountsService {
