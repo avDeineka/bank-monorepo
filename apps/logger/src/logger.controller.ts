@@ -3,6 +3,8 @@ import { Controller, Inject, Logger } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { Knex } from 'knex';
 import { PATTERNS } from '@app/common';
+import { trace } from 'console';
+import { use } from 'passport';
 
 @Controller()
 export class LoggerController {
@@ -17,9 +19,10 @@ export class LoggerController {
     try {
       await this.knex('audit_logs').insert({
         service: data.service,
+        user_id: data.user_id || null,
         event: data.event,
-        payload: JSON.stringify(data.payload), // Записуємо деталі як JSON
-        created_at: new Date()
+        payload: JSON.stringify(data.payload),
+        trace_id: data.trace_id || null,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

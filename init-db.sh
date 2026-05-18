@@ -21,6 +21,7 @@ create_db_and_tables "audit_db" "
 CREATE TABLE IF NOT EXISTS audit_logs (
     id SERIAL PRIMARY KEY,
     service VARCHAR,
+    user_id INTEGER DEFAULT NULL,
     event VARCHAR,
     payload JSONB,
     trace_id UUID DEFAULT NULL,
