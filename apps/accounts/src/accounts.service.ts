@@ -2,11 +2,14 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { CreateAccountDto, TransferDto } from '@app/common';
-import { SERVICES, PATTERNS, AppError, AppLogger, getErrorMessage, rpc, traceStorage } from '@app/common';
+import { SERVICES, PATTERNS, AppError, AuditLoggerService, AppLogger, getErrorMessage, rpc, traceStorage } from '@app/common';
 import { AccountsRepository } from './repositories/accounts.repository';
 
 @Injectable()
 export class AccountsService {
+
+  private readonly auditLogger: AuditLoggerService;
+  
   constructor(
     private readonly accountsRepo: AccountsRepository,
     private readonly logger: AppLogger,
@@ -14,33 +17,20 @@ export class AccountsService {
     @Inject(SERVICES.LOGGER) private readonly loggerClient: ClientProxy,
   ) {
     this.logger.setContext(AccountsService.name);
+    this.auditLogger = new AuditLoggerService(SERVICES.ACCOUNTS, this.loggerClient);
   }
 
   async createAccount(data: CreateAccountDto) {
-    const traceId = traceStorage.getStore()?.traceId || null;
-    console.log(`Creating account for user ${data.user_id} with currency ${data.currency} and traceId ${traceId}`);
     try {
       await this.accountsRepo.createWithTransaction(data);
-
-      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
-        service: SERVICES.ACCOUNTS,
-        user_id: data.user_id,
-        event: 'ACCOUNT_CREATED',
-        payload: data,
-        trace_id: traceId,
-      });
+      this.logger.log(`✅ Account created for user ${data.user_id} with currency ${data.currency}`);
+      this.auditLogger.log('ACCOUNT_CREATED', data, data.user_id);
 
       return { status: 'success' };
     } catch (error) {
       const errorMessage = getErrorMessage (error);
       this.logger.error(`❌ SAGA Triggered, Accounts failed ${errorMessage}`);
-      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
-        service: SERVICES.ACCOUNTS,
-        user_id: data.user_id,
-        event: 'NEW_ACCOUNT_FAILED',
-        payload: data,
-        trace_id: traceId,
-      });
+      this.auditLogger.log('NEW_ACCOUNT_FAILED', data, data.user_id);
       rpc.emit(this.authClient, PATTERNS.ACCOUNT.CREATE_FAILED, {
         userId: data.user_id,
         reason: errorMessage
@@ -65,26 +55,14 @@ export class AccountsService {
       }
       const transfer = await this.accountsRepo.transferMoney(fromUserId, data, traceId);
       
-      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
-        service: SERVICES.ACCOUNTS,
-        user_id: fromUserId,
-        event: 'TRANSFER_COMPLETED',
-        payload: { from: fromAccountId, to: toAccountId, amount, currency, status: 'success' },
-        trace_id: traceId,
-      });
+      this.auditLogger.log('TRANSFER_COMPLETED', { from: fromAccountId, to: toAccountId, amount, currency }, fromUserId);
 
       this.logger.log(`✅ Transfer completed: ${fromAccountId} -> ${toAccountId} : ${amount} ${currency}`);
       return { status: 'success', transfer };
     
     } catch (rawError) {
       const error = rawError instanceof Error ? rawError : new Error(String(rawError));
-      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
-        service: SERVICES.ACCOUNTS,
-        user_id: fromUserId,
-        event: 'TRANSFER_FAILED',
-        payload: { from: fromAccountId, to: toAccountId, amount, currency, status: 'error', message: error.message },
-        trace_id: traceId,
-      });
+      this.auditLogger.log('TRANSFER_FAILED', { from: fromAccountId, to: toAccountId, amount, currency, message: error.message }, fromUserId);
       throw error;
     }
   }

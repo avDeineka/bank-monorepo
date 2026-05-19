@@ -4,18 +4,22 @@ import { Knex } from 'knex';
 import { firstValueFrom } from 'rxjs';
 import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { SERVICES, PATTERNS, ROLES, CreateAccountDto, CreateUserDto, getErrorMessage, SetRoleDto, traceStorage, rpc } from '@app/common';
+import { SERVICES, PATTERNS, ROLES, CreateAccountDto, CreateUserDto, getErrorMessage, SetRoleDto, AuditLoggerService, rpc } from '@app/common';
 
 @Injectable()
 export class UsersService {
 
+  private readonly auditLogger: AuditLoggerService;
+  
   constructor(
     @Inject('KNEX_CONNECTION')
     private readonly knex: Knex,
     
     @Inject(SERVICES.ACCOUNTS) private accountsClient: ClientProxy,
     @Inject(SERVICES.LOGGER) private loggerClient: ClientProxy,
-  ) { }
+  ) { 
+    this.auditLogger = new AuditLoggerService(SERVICES.AUTH, this.loggerClient);
+  }
 
   private readonly logger = new Logger(UsersService.name);
   private readonly userSelection = ['id', 'name', 'email', 'phone', 'role'] as const;
@@ -48,7 +52,6 @@ export class UsersService {
   }
 
   async create (dto: CreateUserDto) {
-    const traceId = traceStorage.getStore()?.traceId || null;
     const { email, password, name, phone } = dto;
     const role = ROLES.USER;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -64,23 +67,12 @@ export class UsersService {
         })
         .returning(['id', 'email', 'role', 'name', 'phone']);
 
-      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
-        service: SERVICES.AUTH,
-        user_id: newUser.id,
-        event: 'NEW_USER',
-        payload: { name, email, phone, role },
-        trace_id: traceId,
-      });
+      this.auditLogger.log('NEW_USER', { name, email, phone, role }, newUser.id);
+
     } catch (error) {
       const message = getErrorMessage(error);
       this.logger.error(`❌ Failed to add new user ${message}`);
-      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
-        service: SERVICES.AUTH,
-        user_id: null,
-        event: 'NEW_USER_FAILED',
-        payload: { email, role, message },
-        trace_id: traceId,
-      });
+      this.auditLogger.log('NEW_USER_FAILED', { email, role, message }, null);
       throw error;
     }
 
@@ -118,41 +110,23 @@ export class UsersService {
         });
         // Тут можна кинути окремий алярм у систему моніторингу
       }*/
-      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, { // unusual case, when user was created but account creation failed, so we have to log it with user_id but with failed event
-        service: SERVICES.AUTH,
-        event: 'SAGA_ROLLBACK',
-        payload: { userId: newUser.id, reason: errorMessage },
-        trace_id: traceId,
-      });
+      
+      this.auditLogger.log('SAGA_ROLLBACK', { userId: newUser.id, reason: errorMessage }, newUser.id);
       throw error;
     }
   }
 
   async setRole(dto: SetRoleDto) {
-    const traceId = traceStorage.getStore()?.traceId || null;
     const [updatedUser] = await this.knex('users')
       .where({ email: dto.email })
       .update({ role: dto.role })
       .returning(['id', 'email', 'role', 'name', 'phone']);
 
     if (!updatedUser) {
-      rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
-        service: SERVICES.AUTH,
-        user_id: null,
-        event: 'ROLE_CHANGE_FAILED',
-        payload: { role: dto.role, email: dto.email, message: 'User email not found' },
-        trace_id: traceId,
-      });
+      this.auditLogger.log('ROLE_CHANGE_FAILED', { role: dto.role, email: dto.email, message: 'User email not found' }, null);
       throw new NotFoundException(`User with email ${dto.email} not found`);
     }
-    rpc.emit(this.loggerClient, PATTERNS.SYSTEM.LOGGER, {
-      service: SERVICES.AUTH,
-      user_id: updatedUser.id,
-      event: 'ROLE_CHANGED',
-      payload: { role: dto.role, name: updatedUser.name, email: dto.email },
-      trace_id: traceId,
-    });
-
+    this.auditLogger.log('ROLE_CHANGED', { role: dto.role, name: updatedUser.name, email: dto.email }, updatedUser.id);
     return updatedUser;
   }
 

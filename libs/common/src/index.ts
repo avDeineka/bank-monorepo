@@ -15,6 +15,7 @@ export * from './errors/app.error';
 export * from './filters/rpc-exception.filter';
 export * from './interceptors/rmq-trace.interceptor';
 export * from './logger/app-logger.service';
+export * from './logger/audit-logger.service';
 export * from './logger/logger.module';
 export * from './modules/rmq.module';
 export * from './trace-storage';
