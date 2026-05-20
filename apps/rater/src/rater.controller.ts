@@ -1,25 +1,22 @@
 ﻿// apps/rater/src/rater.controller.ts
-import { Controller, Inject } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { RaterService } from './rater.service';
-import { Redis } from 'ioredis';
 
 @Controller()
 export class RaterController {
-  constructor(
-    private readonly raterService: RaterService,
-    @Inject('REDIS_CLIENT') private readonly redis: Redis,
-  ) {}
+  constructor(private readonly raterService: RaterService) { }
 
   @GrpcMethod('RaterService', 'PingRater')
   async pingRater() {
-    // Читаємо все, що є в хеші "rates" у Redis
-    const cachedRates = await this.redis.hgetall('rates');
+    const currentCache = await this.raterService.getLiveRates();
 
     return {
       status: 'ok',
       provider: 'ExchangeRate-API',
-      current_rates_cached: JSON.stringify(cachedRates),
+      rates: currentCache && Object.keys(currentCache).length > 0
+        ? JSON.stringify(currentCache)
+        : 'EMPTY_OR_UNAVAILABLE', // 👈 Тепер ключ збігається з proto на 100%
     };
   }
 }

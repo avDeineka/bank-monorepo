@@ -1,5 +1,5 @@
 import { IsIn, IsInt, IsNumber, IsPositive, IsString, Min, IsOptional } from 'class-validator';
-import { SUPPORTED_CURRENCIES } from '../constants/currencies';
+import { CURRENCIES } from '../constants/currencies';
 
 export class TransferDto {
 
@@ -16,7 +16,7 @@ export class TransferDto {
   amount!: number;
 
   @IsString()
-  @IsIn(SUPPORTED_CURRENCIES)
+  @IsIn(CURRENCIES)
   currency!: string;
 
   @IsOptional() 

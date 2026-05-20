@@ -1,5 +1,5 @@
 import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
-import { SUPPORTED_CURRENCIES } from '../constants/currencies';
+import { CURRENCIES } from '../constants/currencies';
 
 export class CreateAccountDto {
   @IsNumber()
@@ -7,7 +7,7 @@ export class CreateAccountDto {
 
   @IsString()
   @IsNotEmpty({ message: 'Currency is required' })
-  @IsIn(SUPPORTED_CURRENCIES)
+  @IsIn(CURRENCIES)
   currency!: string;
 
   @IsOptional()

@@ -35,19 +35,17 @@ export class ApiController implements OnModuleInit {
     this.raterService = this.raterClient.getService<RaterServiceClient>('RaterService');
   }
 
-  // --- НОВИЙ gRPC ЕНДПОІНТ ---
   @Get('pingRater')
   async pingRater() {
     try {
-      // Викликаємо gRPC мікросервіс. Він повертає Observable, тому робимо firstValueFrom
+      // firstValueFrom забирає перший івент з потоку gRPC і перетворює на Promise
       const response = await firstValueFrom(this.raterService.pingRater({}));
-      return response;
+      return response; // 👈 Він просто транслює об'єкт далі в HTTP JSON
     } catch (error: any) {
       return { error: 'gRPC request failed', details: error.message };
     }
   }
 
-  // --- СИСТЕМНІ ЕНДПОІНТИ ---
   @Get('ping')
   accountsPing() {
     return rpc.send(this.accountsClient, PATTERNS.SYSTEM.PING, { hello: 'from gateway' });

@@ -1,55 +1,95 @@
 ﻿// apps/rater/src/rater.service.ts
-import { Injectable, Inject, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { HttpService } from '@nestjs/axios';
-import { Redis } from 'ioredis';
-import { IRateProvider } from './strategies/rate-provider.interface';
-import { ExchangeRateApiStrategy } from './strategies/exchange-rate-api.strategy';
 
 @Injectable()
 export class RaterService implements OnModuleInit {
   private readonly logger = new Logger(RaterService.name);
-  private providerStrategy: IRateProvider;
 
+  // Конструктор залишається твоїм (Redis, ProviderStrategy тощо)
   constructor(
-    @Inject('REDIS_CLIENT') private readonly redis: Redis,
-    private readonly httpService: HttpService,
-  ) {
-    // Ініціалізуємо поточну стратегію. 
-    // Потім сюди можна додати фабрику, яка читатиме з config/env типу PROVIDER=MONO
-    this.providerStrategy = new ExchangeRateApiStrategy(this.httpService);
-  }
+    @Inject('REDIS_CLIENT') private readonly redis: any,
+    @Inject('PROVIDER_STRATEGY') private readonly providerStrategy: any
+  ) { }
 
-  // Стягуємо курси відразу при запуск мікросервісу, щоб не чекати першого крону
   async onModuleInit() {
-    this.logger.log('🚀 RaterService initialized. Running initial rates sync...');
-    await this.syncRates();
+    this.logger.log('🚀 Rater Microservice initializing...');
+    // Запускаємо асинхронну перевірку окремо, щоб не блокувати старт самого NestJS додатка
+    this.bootstrapCache();
   }
 
-  // Крон працює кожну годину. Для тестів можна поставити CronExpression.EVERY_MINUTE
-  @Cron(CronExpression.EVERY_HOUR)
-  async handleCron() {
-    this.logger.log('⏰ Scheduled rates sync triggered...');
-    await this.syncRates();
-  }
+  /**
+   * Горда авто-ініціалізація при старті
+   */
+  private async bootstrapCache() {
+    const maxAttempts = 5;
+    let delay = 2000; // 2 секунди
 
-  private async syncRates() {
-    try {
-      const rates = await this.providerStrategy.fetchRates();
-      
-      // Записуємо в Redis у Хеш-таблицю з ключем "rates"
-      // Записує пари: rates -> { "USD": "1", "EUR": "0.915", ... }
-      await this.redis.hset('rates', rates);
-      
-      this.logger.log(`✅ Rates successfully synced to Redis: ${JSON.stringify(rates)}`);
-    } catch (error: any) {
-      this.logger.error(`❌ Rates sync failed: ${error.message}`);
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        // 1. Перевіряємо, чи є взагалі дані в Redis
+        const cachedRates = await this.redis.hgetall('rates');
+
+        if (!cachedRates || Object.keys(cachedRates).length === 0) {
+          this.logger.warn('⚠️ Cache is completely empty. Fetching initial rates right now...');
+          await this.syncRates();
+        } else {
+          this.logger.log('✅ Cache already contains data. Sitting back and waiting for the Cron schedule.');
+        }
+
+        // Якщо все пройшло успішно — виходимо з циклу ретраїв
+        return;
+
+      } catch (error: any) {
+        this.logger.error(
+          `❌ Connection to Redis failed (Attempt ${attempt}/${maxAttempts}): ${error.message}`
+        );
+
+        if (attempt === maxAttempts) {
+          this.logger.error('💥 Critical: Could not initialize Rater cache after maximum retries.');
+          return;
+        }
+
+        // Чекаємо перед наступною спробою, даючи Redis час піднятися
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay *= 1.5; // Експоненційне збільшення затримки
+      }
     }
   }
 
-  // Метод для читання конкретного курсу (знадобиться для RPC контролера)
-  async getRate(currency: string): Promise<number | null> {
-    const rate = await this.redis.hget('rates', currency);
-    return rate ? parseFloat(rate) : null;
+  /**
+   * Ізольований метод синхронізації
+   */
+  async syncRates() {
+    try {
+      const rates = await this.providerStrategy.fetchRates();
+      await this.redis.hset('rates', rates);
+      this.logger.log('♻️ Rates successfully updated in Redis.');
+      return rates;
+    } catch (error: any) {
+      this.logger.error(`❌ External API sync failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Оновлення суто за розкладом
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async handleCronUpdate() {
+    this.logger.log('⏰ Scheduled Cron triggered: Syncing exchange rates...');
+    try {
+      await this.syncRates();
+    } catch {
+      // Крон просто логує помилку, не ламаючи додаток
+      this.logger.error('⏰ Scheduled Cron sync failed, will retry next hour.');
+    }
+  }
+
+  /**
+   * Чистий метод для майбутнього сервісу конвертації
+   */
+  async getLiveRates(): Promise<Record<string, string>> {
+    return this.redis.hgetall('rates');
   }
 }

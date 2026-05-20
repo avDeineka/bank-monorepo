@@ -1,3 +1,3 @@
-export const SUPPORTED_CURRENCIES = ['USD', 'EUR', 'GBP', 'CHF', 'JPY'] as const;
+export const CURRENCIES = ['USD', 'EUR', 'GBP', 'CHF' ] as const;
 
-export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+export type SupportedCurrency = (typeof CURRENCIES)[number];
