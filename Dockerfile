@@ -24,8 +24,8 @@ ARG APP_NAME
 ARG BUILD_MODE=release
 ENV APP_NAME=$APP_NAME
 ENV BUILD_MODE=$BUILD_MODE
-# Копіюємо збудовану папку у тій же структурі, що генерує webpack
-COPY --from=builder /app/dist/apps/ ./dist/apps/
+# Копіюємо весь dist, бо runtime використовує також assets із dist/libs/common/proto
+COPY --from=builder /app/dist/ ./dist/
 
 # Для debug-режиму запускаємо з правильним шляхом
 CMD ["sh", "-c", "if [ \"$BUILD_MODE\" = \"debug\" ]; then node --inspect=0.0.0.0:9229 dist/apps/$APP_NAME/main.js; else node dist/apps/$APP_NAME/main.js; fi"]

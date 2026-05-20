@@ -1,0 +1,27 @@
+﻿syntax = "proto3";
+
+package rater;
+
+service RaterService {
+  // Наш майбутній метод для отримання курсів
+  rpc GetCrossRate (CrossRateRequest) returns (CrossRateResponse);
+  // Тестовий метод для перевірки працездатності та зв'язку з API
+  rpc PingRater (PingRequest) returns (PingResponse);
+}
+
+message CrossRateRequest {
+  string from = 1;
+  string to = 2;
+}
+
+message CrossRateResponse {
+  double rate = 1;
+}
+
+message PingRequest {}
+
+message PingResponse {
+  string status = 1;
+  string provider = 2;
+  string current_rates_cached = 3; // Повернемо JSON-рядок для дебагу
+}

@@ -1,9 +1,9 @@
-﻿// gateway/api.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
-import { RmqModule } from '@app/common';
+import { getRaterProtoPath, RmqModule } from '@app/common';
 import { SERVICES, RABBIT_CONFIG } from '@app/common';
 import { ApiController } from './api.controller';
 import { JwtStrategy } from '../jwt.strategy';
@@ -21,6 +21,17 @@ import { RolesGuard } from '../roles.guard';
     }),
     RmqModule.register(SERVICES.ACCOUNTS, RABBIT_CONFIG.ACCOUNTS_QUEUE),
     RmqModule.register(SERVICES.AUTH, RABBIT_CONFIG.AUTH_QUEUE),
+    ClientsModule.register([
+      {
+        name: 'RATER_PACKAGE',
+        transport: Transport.GRPC,
+        options: {
+          package: 'rater',
+          protoPath: getRaterProtoPath(),
+          url: process.env.RATER_HOST ? `${process.env.RATER_HOST}:3004` : 'localhost:3004',
+        },
+      },
+    ]),
   ],
   controllers: [ApiController],
   providers: [JwtStrategy, RolesGuard],

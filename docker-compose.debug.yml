@@ -22,6 +22,16 @@ services:
       - "5672:5672"
       - "15672:15672"
 
+  # Наш новий гравець у команді інфраструктури
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379" # Стандартний порт, доступний локально для твоїх дебаг-тулзів
+    volumes:
+      - redis_data:/data
+
   gateway:
     build:
       context: .
@@ -35,12 +45,14 @@ services:
       - accounts
       - auth
       - logger
+      - rater # Додав у залежності, щоб запуск був послідовним
     environment:
       - JWT_SECRET=${JWT_SECRET}
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - ACCOUNTS_HOST=accounts
       - AUTH_HOST=auth
       - LOGGER_HOST=logger
+      - RATER_HOST=rater
       - APP_NAME=gateway
 
   auth:
@@ -73,9 +85,11 @@ services:
     depends_on:
       - db
       - rabbitmq
+      - redis # Чекаємо на старт Redis
     environment:
       - DATABASE_URL=postgres://user:password@db:5432/bank_db
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - REDIS_URL=redis://redis:6379 # Якщо захочеш читати з Redis напряму (або через rater)
       - APP_NAME=accounts
 
   logger:
@@ -95,5 +109,25 @@ services:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - APP_NAME=logger
 
+  # Новий мікросервіс для збору курсів валют
+  rater:
+    build:
+      context: .
+      args:
+        APP_NAME: rater
+        BUILD_MODE: debug
+    ports:
+      - "3004:3004" # Новий вільний порт для мікросервісу
+      - "9234:9229" # Порт для дебагу Node.js (інспектор)
+    depends_on:
+      - rabbitmq
+      - redis
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - REDIS_URL=redis://redis:6379 # Підключення до нашого контейнера
+      - EXCHANGE_API_KEY=${EXCHANGE_API_KEY} # Прокидаємо ключ із .env
+      - APP_NAME=rater
+
 volumes:
   postgres_data:
+  redis_data:

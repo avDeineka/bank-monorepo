@@ -3,8 +3,7 @@
   "collection": "@nestjs/schematics",
   "sourceRoot": "apps/gateway/src",
   "compilerOptions": {
-    "deleteOutDir": true,
-    "tsConfigPath": "apps/gateway/tsconfig.app.json"
+    "deleteOutDir": true
   },
   "monorepo": true,
   "root": "apps/gateway",
@@ -42,7 +41,13 @@
       "entryFile": "index",
       "sourceRoot": "libs/common/src",
       "compilerOptions": {
-        "tsConfigPath": "libs/common/tsconfig.lib.json"
+        "tsConfigPath": "libs/common/tsconfig.lib.json",
+        "assets": [
+          {
+            "include": "proto/**/*.proto",
+            "outDir": "dist/libs/common"
+          }
+        ]
       }
     },
     "logger": {
@@ -52,6 +57,15 @@
       "sourceRoot": "apps/logger/src",
       "compilerOptions": {
         "tsConfigPath": "apps/logger/tsconfig.app.json"
+      }
+    },
+    "rater": {
+      "type": "application",
+      "root": "apps/rater",
+      "entryFile": "main",
+      "sourceRoot": "apps/rater/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/rater/tsconfig.app.json"
       }
     }
   }
