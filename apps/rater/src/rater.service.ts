@@ -3,11 +3,12 @@ import { Inject, Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ExchangeRateApiStrategy } from './strategies/exchange-rate-api.strategy';
 import { FrankfurterApiStrategy } from './strategies/frankfurter.strategy';
+import { IRateProvider } from './strategies/rate-provider.interface';
 
 @Injectable()
 export class RaterService implements OnModuleInit {
   private readonly logger = new Logger(RaterService.name);
-  private readonly providers: any[];
+  private readonly providers: IRateProvider[];
   private currentProviderName = 'None';
 
   constructor(
@@ -41,7 +42,7 @@ export class RaterService implements OnModuleInit {
    * Головний уніфікований метод оновлення даних.
    * Проходить по черзі провайдерів, поки один із них не віддасть актуальні курси.
    */
-  async syncRates(): Promise<Record<string, string>> {
+  async syncRates(): Promise<Record<string, number>> {
     for (const provider of this.providers) {
       try {
         this.logger.log(`Trying to fetch rates via [${provider.name}]...`);

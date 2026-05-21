@@ -7,6 +7,7 @@ import { IRateProvider } from './rate-provider.interface';
 
 @Injectable()
 export class ExchangeRateApiStrategy implements IRateProvider {
+  readonly name = 'ExchangeRate-API'; // Ім'я провайдера для ідентифікації
   private readonly logger = new Logger(ExchangeRateApiStrategy.name);
   private readonly targetCurrencies = CURRENCIES;
 
@@ -30,7 +31,11 @@ export class ExchangeRateApiStrategy implements IRateProvider {
       // Фільтруємо лише ті валюти, які нам потрібні
       for (const currency of this.targetCurrencies) {
         if (data.conversion_rates[currency] !== undefined) {
-          rates[currency] = data.conversion_rates[currency];
+          rates[currency] = Number (data.conversion_rates[currency]);
+          if (! rates[currency]) {
+            this.logger.warn(`Currency ${currency} has invalid rate in API response`);
+            delete rates[currency]; // Видаляємо некоректні курси
+          }
         } else {
           this.logger.warn(`Currency ${currency} missing in API response`);
         }
