@@ -13,9 +13,9 @@ export class RaterController {
 
     return {
       status: 'ok',
-      provider: 'ExchangeRate-API',
+      provider: this.raterService.getCurrentProvider(),
       rates: currentCache && Object.keys(currentCache).length > 0
-        ? JSON.stringify(currentCache)
+        ? Object.entries(currentCache).map(([k, v]) => `${k}:${v}`).join(', ')
         : 'EMPTY_OR_UNAVAILABLE', // 👈 Тепер ключ збігається з proto на 100%
     };
   }

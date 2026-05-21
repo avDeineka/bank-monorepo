@@ -6,6 +6,7 @@ import { HttpModule } from '@nestjs/axios';
 import { RaterController } from './rater.controller';
 import { RaterService } from './rater.service';
 import { ExchangeRateApiStrategy } from './strategies/exchange-rate-api.strategy';
+import { FrankfurterApiStrategy } from './strategies/frankfurter.strategy';
 
 @Module({
   imports: [
@@ -15,10 +16,8 @@ import { ExchangeRateApiStrategy } from './strategies/exchange-rate-api.strategy
   controllers: [RaterController],
   providers: [
     RaterService,
-    {
-      provide: 'PROVIDER_STRATEGY',
-      useClass: ExchangeRateApiStrategy,
-    },
+    ExchangeRateApiStrategy,
+    FrankfurterApiStrategy,
     {
       provide: 'REDIS_CLIENT',
       useFactory: () => {
