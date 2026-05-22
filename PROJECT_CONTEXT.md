@@ -7,6 +7,7 @@
 - NestJS monorepo
 - RabbitMQ для міжсервісної взаємодії
 - PostgreSQL через Knex
+- gRPC та Redis у мікросервісі rater
 - Спільні DTO, constants та утиліти в `libs/common`
 
 ## Services
@@ -20,6 +21,8 @@
 - `apps/accounts`
   - акаунти, баланс, перекази
   - зберігає account-дані окремо від `auth`
+- `apps/rater`
+  - отримує і ділиться курсами валют для конвертації
 - `apps/logger`
   - приймає доменні події для логування
 
@@ -55,8 +58,7 @@ DTO виносяться в `libs/common/src/dto`.
   - `EUR`
   - `GBP`
   - `CHF`
-  - `JPY`
-- `accounts` має вміти створювати акаунт не лише як частину реєстрації
+- `accounts` може створювати акаунт не лише як частину реєстрації
 
 ## Important Decisions
 
@@ -76,7 +78,7 @@ DTO виносяться в `libs/common/src/dto`.
 
 - У `auth -> accounts` вже є saga-подібний компенсаційний сценарій під час реєстрації юзера
 - При рефакторингах account creation не можна випадково викидати saga-поведінку, якщо задача лише в перейменуванні або узагальненні методу
-- `PATTERNS.USER.GET_ONE` тепер повертає профіль юзера разом із масивом `accounts`, який `auth` запитує в `accounts` через `PATTERNS.ACCOUNT.GET_ACCOUNTS`
+- `PATTERNS.USER.GET_ONE` повертає профіль юзера разом із масивом `accounts`, який `auth` запитує в `accounts` через `PATTERNS.ACCOUNT.GET_ACCOUNTS`
 
 ## Debugging
 

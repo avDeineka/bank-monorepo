@@ -2,7 +2,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { firstValueFrom } from 'rxjs';
-import { Controller, Inject, Get, OnModuleInit, Post, Body, Param, Req, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Inject, Get, OnModuleInit, Post, Body, Param, Query, Req, ParseIntPipe, UseGuards } from '@nestjs/common';
 import type { ClientGrpc } from '@nestjs/microservices';
 import { AuthGuard } from '@nestjs/passport';
 import { SERVICES, PATTERNS, ROLES, CreateAccountDto, CreateUserDto, LoginDto, OpenAccountDto, SetRoleDto, TransferDto, rpc } from '@app/common';
@@ -113,6 +113,32 @@ export class ApiController implements OnModuleInit {
     };
 
     return rpc.send(this.accountsClient, PATTERNS.ACCOUNT.CREATE, createAccountDto);
+  }
+
+  @Get('accountsRate')
+  async accountsRate(
+    @Query('base') base: string,
+    @Query('quote') quote: string
+  ) {
+    try {
+      // Відправляємо запит через RabbitMQ в мікросервіс accounts
+      const rawResponse = await firstValueFrom(
+        rpc.send(this.accountsClient, PATTERNS.ACCOUNT.GET_RATE, { base, quote })
+      );
+      const response = rawResponse as { rate: number };
+      return {
+        success: true,
+        message: 'Full chain transport test passed!',
+        rate: response?.rate
+      };
+    } catch (error: any) {
+      console.error('Error in accountsRate endpoint:', error);
+      return {
+        success: false,
+        error: 'Transport chain broken',
+        details: error.message
+      };
+    }
   }
 
   @UseGuards(AuthGuard('jwt'))

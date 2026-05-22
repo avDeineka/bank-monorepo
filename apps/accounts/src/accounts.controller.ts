@@ -1,7 +1,7 @@
 ﻿// accounts/src/accounts.controller.ts
 import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
-import { CreateAccountDto, TransferDto, getErrorMessage, PATTERNS, AppError } from '@app/common';
+import { CreateAccountDto, TransferDto, PATTERNS, AppError } from '@app/common';
 import { AccountsService } from './accounts.service';
 
 @Controller()
@@ -36,6 +36,13 @@ export class AccountsController {
   async getAccounts(@Payload() data: { userId: number }) {
     this.logger.log(`user ${data.userId} accounts are asked`);
     return this.accountsService.getAccounts(data.userId);
+  }
+
+  @MessagePattern({ cmd: PATTERNS.ACCOUNT.GET_RATE })
+  async getRate(@Payload() data: { base: string; quote: string }) {
+    console.log(`[AccountsController] RMQ message received for rate: ${data.base}/${data.quote}`);
+    const rate = await this.accountsService.getRateFromRater(data.base, data.quote);
+    return { rate };
   }
 
   @MessagePattern({ cmd: PATTERNS.ACCOUNT.TRANSFER })

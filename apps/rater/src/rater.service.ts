@@ -95,4 +95,33 @@ export class RaterService implements OnModuleInit {
   getCurrentProvider(): string {
     return this.currentProviderName;
   }
+
+  async calculateCrossRate(base: string, quote: string): Promise<number> {
+    const rates = await this.getLiveRates(); // Отримуємо Record<string, string> з Redis
+
+    if (!rates || Object.keys(rates).length === 0) {
+      throw new Error('Exchange rates cache is empty or unavailable');
+    }
+
+    // Переводимо в UpperCase про всяк випадок, бо юзери або сервіси можуть прислати "eur" замість "EUR"
+    const baseAsset = base.toUpperCase();
+    const quoteAsset = quote.toUpperCase();
+
+    const baseRate = parseFloat(rates[baseAsset]);
+    const quoteRate = parseFloat(rates[quoteAsset]);
+
+    if (!baseRate || !quoteRate) {
+      throw new Error(`Rate not found for one of the currencies: ${baseAsset} or ${quoteAsset}`);
+    }
+
+    // Якщо база і котирування однакові (наприклад, USD до USD), крос-курс завжди 1
+    if (baseAsset === quoteAsset) return 1.0;
+
+    // Математика крос-курсу через якірну валюту Redis (наприклад, USD)
+    // Формула: (Курс Анкор->Quote) / (Курс Анкор->Base)
+    const crossRate = quoteRate / baseRate;
+
+    // Округляємо до 6 знаків (стандарт для форекс-котирувань)
+    return parseFloat(crossRate.toFixed(6));
+  }
 }

@@ -1,13 +1,22 @@
 ﻿// accounts/src/accounts.service.ts
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import type { ClientGrpc } from '@nestjs/microservices';
+import { firstValueFrom, Observable } from 'rxjs';
 import { CreateAccountDto, TransferDto } from '@app/common';
 import { SERVICES, PATTERNS, AppError, AuditLoggerService, AppLogger, getErrorMessage, rpc, traceStorage } from '@app/common';
 import { AccountsRepository } from './repositories/accounts.repository';
 
+interface CrossRateResponse {
+  rate: number;
+}
+interface RaterServiceClient {
+  getCrossRate(data: { base: string; quote: string }): Observable<CrossRateResponse>;
+}
 @Injectable()
-export class AccountsService {
+export class AccountsService implements OnModuleInit {
 
+  private raterService!: RaterServiceClient; 
   private readonly auditLogger: AuditLoggerService;
   
   constructor(
@@ -15,9 +24,14 @@ export class AccountsService {
     private readonly logger: AppLogger,
     @Inject(SERVICES.AUTH) private readonly authClient: ClientProxy,
     @Inject(SERVICES.LOGGER) private readonly loggerClient: ClientProxy,
+    @Inject('RATER_PACKAGE') private readonly client: ClientGrpc,
   ) {
     this.logger.setContext(AccountsService.name);
     this.auditLogger = new AuditLoggerService(SERVICES.ACCOUNTS, this.loggerClient);
+  }
+  
+  onModuleInit() {
+    this.raterService = this.client.getService<RaterServiceClient>('RaterService');
   }
 
   async createAccount(data: CreateAccountDto) {
@@ -67,4 +81,16 @@ export class AccountsService {
     }
   }
 
+  async getRateFromRater(base: string, quote: string): Promise<number> {
+    try {
+      // response автоматично має тип CrossRateResponse
+      const response = await firstValueFrom(
+        this.raterService.getCrossRate({ base, quote })
+      );
+      return response.rate;
+    } catch (error: any) {
+      // Якщо rater впав або валюти немає, gRPC кине помилку сюди
+      throw new Error(`gRPC rate fetch failed: ${error.message}`);
+    }
+  }
 }

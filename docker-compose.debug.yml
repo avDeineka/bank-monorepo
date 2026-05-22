@@ -86,10 +86,12 @@ services:
       - db
       - rabbitmq
       - redis # Чекаємо на старт Redis
+      - rater
     environment:
       - DATABASE_URL=postgres://user:password@db:5432/bank_db
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - REDIS_URL=redis://redis:6379 # Якщо захочеш читати з Redis напряму (або через rater)
+      - RATER_GRPC_URL=rater:3004
       - APP_NAME=accounts
 
   logger:

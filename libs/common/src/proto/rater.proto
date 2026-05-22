@@ -9,8 +9,8 @@ service RaterService {
 }
 
 message CrossRateRequest {
-  string from = 1;
-  string to = 2;
+  string base = 1;
+  string quote = 2;
 }
 
 message CrossRateResponse {
