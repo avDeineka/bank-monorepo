@@ -20,6 +20,15 @@ services:
       - "5672:5672"
       - "15672:15672"
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
   gateway:
     build:
       context: .
@@ -33,12 +42,14 @@ services:
       - accounts
       - auth
       - logger
+      - rater
     environment:
       - JWT_SECRET=${JWT_SECRET}
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - ACCOUNTS_HOST=accounts
       - AUTH_HOST=auth
       - LOGGER_HOST=logger
+      - RATER_HOST=rater
       - APP_NAME=gateway
 
   auth:
@@ -71,9 +82,13 @@ services:
     depends_on:
       - db
       - rabbitmq
+      - redis
+      - rater
     environment:
       - DATABASE_URL=postgres://user:password@db:5432/bank_db
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - REDIS_URL=redis://redis:6379
+      - RATER_GRPC_URL=rater:3004
       - APP_NAME=accounts
 
   logger:
@@ -93,5 +108,24 @@ services:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - APP_NAME=logger
 
+  rater:
+    build:
+      context: .
+      args:
+        APP_NAME: rater
+        BUILD_MODE: debug
+    ports:
+      - "3004:3004"
+      - "9234:9229"
+    depends_on:
+      - rabbitmq
+      - redis
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - REDIS_URL=redis://redis:6379
+      - EXCHANGE_API_KEY=${EXCHANGE_API_KEY}
+      - APP_NAME=rater
+
 volumes:
   postgres_data:
+  redis_data:
