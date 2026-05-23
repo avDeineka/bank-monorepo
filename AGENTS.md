@@ -20,11 +20,13 @@ The main goal for an agent here is to make targeted changes without silently bre
 - `apps/accounts`
   - Accounts, balances, transfers, currency conversion integration.
   - Owns account-related data.
+  - PATTERNS.ACCOUNT.TRANSFER is a unified endpoint that automatically handles both single-currency transfers and cross-currency conversions using the rater microservice under the hood.
 - `apps/logger`
   - Consumes audit/domain log events.
 - `apps/rater`
   - Provides exchange rates.
   - Uses Redis for caching and gRPC for integration.
+  - The main business interaction with rater comes from the accounts microservice.
 - `libs/common`
   - Shared DTOs, constants, filters, logger utilities, RMQ module, proto-path helpers, cross-service helpers.
 
@@ -79,6 +81,8 @@ Current infrastructure assumptions:
 - RabbitMQ
 - Redis
 - gRPC between `accounts` and `rater`
+
+gRPC Port Warning: The rater service explicitly runs on port 3004 (not the default gRPC 50051). Inside the container, it must bind to 0.0.0.0:3004. Ensure RATER_GRPC_URL in other services is explicitly configured as rater:3004.
 
 Important environment variables used in the repo:
 
@@ -161,6 +165,8 @@ Good default workflow:
 - This service owns account-domain rules.
 - Currency-sensitive behavior and transfer behavior should stay here unless there is a strong reason otherwise.
 - Check `rater` integration if touching exchange-rate logic.
+- When dealing with transfers and conversions, all database mutations must be encapsulated in a single Knex transaction using forUpdate() row locks to prevent race conditions and deadlocks.
+- Financial Precision: Exchange rates must be stored as fixed-point numbers (NUMERIC/DECIMAL in PostgreSQL), not REAL/FLOAT. Note that the pg driver returns NUMERIC fields as string in JavaScript to prevent precision loss — explicitly parse or cast it to Number when returning payloads to clients if numerical types are required.
 
 ### `apps/rater`
 
