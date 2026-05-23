@@ -1,4 +1,4 @@
-import { IsIn, IsInt, IsNumber, IsPositive, IsString, Min, IsOptional } from 'class-validator';
+﻿import { IsIn, IsInt, IsNumber, IsPositive, IsString, Min, IsOptional } from 'class-validator';
 import { CURRENCIES } from '../constants/currencies';
 
 export class TransferDto {
@@ -14,10 +14,6 @@ export class TransferDto {
   @IsInt()
   @IsPositive({ message: 'The amount must be greater than zero' })
   amount!: number;
-
-  @IsString()
-  @IsIn(CURRENCIES)
-  currency!: string;
 
   @IsOptional() 
   @IsString()

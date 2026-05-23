@@ -46,14 +46,16 @@ export class AccountsController {
   }
 
   @MessagePattern({ cmd: PATTERNS.ACCOUNT.TRANSFER })
-  async handleTransfer(@Payload() data: { fromUserId: number } & TransferDto) {
+  async transferMoney(@Payload() data: { fromUserId: number } & TransferDto) {
+    this.logger.log(`📥 RMQ Message: Transfer/Convert execution started for user ${data.fromUserId}`);
     try {
       const { fromUserId, ...transferData } = data;
       return await this.accountsService.transferMoney(fromUserId, transferData);
-    } catch (error) {
+    } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
-      const statusCode = error instanceof AppError ? error.statusCode : 500;
-      this.logger.error(`Error occurred while transferring: ${message}`);
+      const statusCode = error?.statusCode || 500;
+
+      this.logger.error(`❌ Transfer failed: ${message}`);
       throw new RpcException({
         code: 'TRANSFER_FAILED',
         message,
@@ -62,4 +64,5 @@ export class AccountsController {
       });
     }
   }
+
 }

@@ -89,6 +89,7 @@ DTO виносяться в `libs/common/src/dto`.
   - `accounts`: `9231`
   - `logger`: `9232`
   - `auth`: `9233`
+  - `rater`: `9234`
 - Debug build (`npm run build:debug`, webpack builder) у цьому репо генерує артефакти не в `dist/apps/...`, а в `dist/<service>/src/...`
 - Якщо breakpoints стають `Unbound`, спочатку перевіряти:
   - `outFiles` у `.vscode/launch.json`

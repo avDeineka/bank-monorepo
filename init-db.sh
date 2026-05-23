@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS transfers (
     to_account_id INTEGER NOT NULL,
     amount BIGINT NOT NULL,
     currency VARCHAR NOT NULL,
+    rate NUMERIC(12, 6) NOT NULL DEFAULT 1.000000,
     purpose VARCHAR,
     status VARCHAR NOT NULL DEFAULT 'PROCESSING',
     created_at TIMESTAMP DEFAULT NOW()

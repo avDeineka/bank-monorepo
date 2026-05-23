@@ -58,8 +58,9 @@ export class AccountsService implements OnModuleInit {
   }
   
   async transferMoney(fromUserId: number, data: TransferDto) {
-    let { fromAccountId, toAccountId, amount, currency } = data;
+    const { fromAccountId, toAccountId, amount } = data;
     const traceId = traceStorage.getStore()?.traceId || null;
+
     try {
       if (amount <= 0) {
         throw new AppError('The amount must be greater than zero', 400, 'INVALID_AMOUNT');
@@ -67,16 +68,45 @@ export class AccountsService implements OnModuleInit {
       if (fromAccountId === toAccountId) {
         throw new AppError('Cannot transfer to the same account', 400, 'SAME_ACCOUNT');
       }
-      const transfer = await this.accountsRepo.transferMoney(fromUserId, data, traceId);
-      
-      this.auditLogger.log('TRANSFER_COMPLETED', { from: fromAccountId, to: toAccountId, amount, currency }, fromUserId);
 
-      this.logger.log(`✅ Transfer completed: ${fromAccountId} -> ${toAccountId} : ${amount} ${currency}`);
-      return { status: 'success', transfer };
-    
+      // Швидкий перевірочний запит метаданих валют
+      const [senderMeta, recipientMeta] = await Promise.all([
+        this.accountsRepo.findById(fromAccountId),
+        this.accountsRepo.findById(toAccountId),
+      ]);
+
+      if (!senderMeta || !recipientMeta) {
+        throw new AppError('Account not found', 404, 'ACCOUNT_NOT_FOUND');
+      }
+
+      let rate = 1;
+      if (senderMeta.currency !== recipientMeta.currency) {
+        rate = await this.getRateFromRater(senderMeta.currency, recipientMeta.currency);
+      }
+
+      // Виконуємо єдину транзакцію в репозиторії
+      const transfer = await this.accountsRepo.executeTransfer(fromUserId, data, rate, traceId);
+
+      this.auditLogger.log('TRANSFER_COMPLETED', {
+        from: fromAccountId,
+        to: toAccountId,
+        amount,
+        currency: senderMeta.currency,
+        rate
+      }, fromUserId);
+
+      this.logger.log(`✅ Transfer completed: ${fromAccountId} -> ${toAccountId} : ${amount} ${senderMeta.currency} (Rate: ${rate})`);
+
+      return {
+        status: 'success',
+        transfer: {
+          ...transfer,
+          rate: Number(transfer.rate) // приводимо "1.161036" з бази назад до number для клієнта
+        }
+      };
     } catch (rawError) {
       const error = rawError instanceof Error ? rawError : new Error(String(rawError));
-      this.auditLogger.log('TRANSFER_FAILED', { from: fromAccountId, to: toAccountId, amount, currency, message: error.message }, fromUserId);
+      this.auditLogger.log('TRANSFER_FAILED', { from: fromAccountId, to: toAccountId, amount, message: error.message }, fromUserId);
       throw error;
     }
   }

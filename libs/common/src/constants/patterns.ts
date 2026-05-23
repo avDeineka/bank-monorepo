@@ -15,7 +15,6 @@ export const PATTERNS = {
     GET_ACCOUNTS: 'account.get_accounts',
     GET_RATE: 'account.get_rate',
     TRANSFER: 'account.transfer',
-    CONVERT: 'account.convert',
   },
   SYSTEM: {
     LOGGER: 'system.log_event',
