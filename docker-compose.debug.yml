@@ -92,6 +92,12 @@ services:
       - REDIS_URL=redis://redis:6379
       - RATER_GRPC_URL=rater:3004
       - APP_NAME=accounts
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 10s   # Перевіряти кожні 10 секунд
+      timeout: 5s     # Чекати відповіді не більше 5 секунд
+      retries: 3      # Якщо 3 рази поспіль впало — вважати контейнер "unhealthy"
+      start_period: 5s # Дати 5 секунд на запуск мікросервісу перед першою перевіркою
 
   logger:
     build:

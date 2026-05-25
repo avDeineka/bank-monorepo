@@ -35,20 +35,25 @@ export class ApiController implements OnModuleInit {
     this.raterService = this.raterClient.getService<RaterServiceClient>('RaterService');
   }
 
-  @Get('pingRater')
-  async pingRater() {
-    try {
-      // firstValueFrom забирає перший івент з потоку gRPC і перетворює на Promise
-      const response = await firstValueFrom(this.raterService.pingRater({}));
-      return response; // 👈 Він просто транслює об'єкт далі в HTTP JSON
-    } catch (error: any) {
-      return { error: 'gRPC request failed', details: error.message };
-    }
+  @Get('health')
+  health() {
+    return rpc.send(this.accountsClient, PATTERNS.SYSTEM.HEALTH, {});
   }
 
   @Get('ping')
   accountsPing() {
     return rpc.send(this.accountsClient, PATTERNS.SYSTEM.PING, { hello: 'from gateway' });
+  }
+
+  @Get('pingRater')
+  async pingRater() {
+    try {
+      // firstValueFrom забирає перший івент з потоку gRPC і перетворює на Promise
+      const response = await firstValueFrom(this.raterService.pingRater({}));
+      return response;
+    } catch (error: any) {
+      return { error: 'gRPC request failed', details: error.message };
+    }
   }
 
   @Get('version')
@@ -151,4 +156,5 @@ export class ApiController implements OnModuleInit {
     const fullData = { ...body, fromUserId };
     return rpc.send(this.accountsClient, PATTERNS.ACCOUNT.TRANSFER, fullData);
   }
+
 }

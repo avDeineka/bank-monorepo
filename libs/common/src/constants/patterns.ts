@@ -17,6 +17,7 @@ export const PATTERNS = {
     TRANSFER: 'account.transfer',
   },
   SYSTEM: {
+    HEALTH: 'system.health',
     LOGGER: 'system.log_event',
     PING: 'system.ping',
   }
