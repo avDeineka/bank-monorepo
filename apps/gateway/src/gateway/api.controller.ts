@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { Controller, Inject, Get, OnModuleInit, Post, Body, Param, Query, Req, ParseIntPipe, UseGuards } from '@nestjs/common';
 import type { ClientProxy, ClientGrpc } from '@nestjs/microservices';
 import { AuthGuard } from '@nestjs/passport';
+import { getMemoryHealthIndicator } from '@app/common';
 import { SERVICES, PATTERNS, ROLES, CreateAccountDto, CreateUserDto, LoginDto, OpenAccountDto, SetRoleDto, TransferDto, rpc } from '@app/common';
 import { Roles } from '../roles.decorator';
 import { RolesGuard } from '../roles.guard';
@@ -57,6 +58,8 @@ export class ApiController implements OnModuleInit {
       }
     };
 
+    const gatewayMemory = getMemoryHealthIndicator();
+
     const askHealth = (serviceName: string, client: any) => {
       const rmqCall = firstValueFrom(rpc.send(client, PATTERNS.SYSTEM.HEALTH, {}));
       return withTimeout(rmqCall, serviceName);
@@ -80,6 +83,7 @@ export class ApiController implements OnModuleInit {
     ]);
 
     const allGood =
+      gatewayMemory.status === 'up' &&
       authHealth.status === 'ok' && // Terminus повертає 'ok'
       accountsHealth.status === 'ok' &&
       loggerHealth.status === 'ok' &&
@@ -89,9 +93,13 @@ export class ApiController implements OnModuleInit {
       status: allGood ? 'ok' : 'error',
       timestamp: new Date().toISOString(),
       services: {
-        auth: authHealth,
-        accounts: accountsHealth,
-        logger: loggerHealth,
+        gateway: {
+          status: gatewayMemory.memory.status === 'up' ? 'ok' : 'error',
+          memory: gatewayMemory.memory
+        },
+        auth: formatServiceResponse (authHealth),
+        accounts: formatServiceResponse (accountsHealth),
+        logger: formatServiceResponse (loggerHealth),
         rater: raterHealth
       }
     };
@@ -214,4 +222,20 @@ export class ApiController implements OnModuleInit {
     return rpc.send(this.accountsService, PATTERNS.ACCOUNT.TRANSFER, fullData);
   }
 
+}
+
+function formatServiceResponse (serviceHealth: any) {
+  // Якщо сервіс повністю ліг і повернув об'єкт з текстовою помилкою
+  if (typeof serviceHealth.error === 'string') {
+    return {
+      status: 'down',
+      message: serviceHealth.error
+    };
+  }
+
+  // Якщо сервіс живий або повернув структуровану помилку від Terminus
+  return {
+    status: serviceHealth.status === 'ok' ? 'ok' : 'down',
+    ...(serviceHealth.info || serviceHealth.details || {})
+  };
 }
