@@ -6,6 +6,7 @@ package rater;
 service RaterService {
   rpc GetCrossRate (CrossRateRequest) returns (CrossRateResponse);
   rpc PingRater (PingRequest) returns (PingResponse);
+  rpc CheckHealth (HealthRequest) returns (HealthResponse);
 }
 
 message CrossRateRequest {
@@ -22,5 +23,13 @@ message PingRequest {}
 message PingResponse {
   string status = 1;
   string provider = 2;
-  string rates = 3; // 👈 Просто, лаконічно, без підкреслень
+  string rates = 3;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string redis = 2;
+  string memory = 3;
 }

@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { firstValueFrom } from 'rxjs';
 import { Controller, Inject, Get, OnModuleInit, Post, Body, Param, Query, Req, ParseIntPipe, UseGuards } from '@nestjs/common';
-import type { ClientGrpc } from '@nestjs/microservices';
+import type { ClientProxy, ClientGrpc } from '@nestjs/microservices';
 import { AuthGuard } from '@nestjs/passport';
 import { SERVICES, PATTERNS, ROLES, CreateAccountDto, CreateUserDto, LoginDto, OpenAccountDto, SetRoleDto, TransferDto, rpc } from '@app/common';
 import { Roles } from '../roles.decorator';
@@ -12,18 +12,20 @@ import { RolesGuard } from '../roles.guard';
 // Інтерфейс для клієнта, який повторює proto-файл
 interface RaterServiceClient {
   pingRater(request: {}): any;
+  checkHealth(request: {}): any;
 }
 
 @Controller('api')
 export class ApiController implements OnModuleInit {
   // 💡 Знак виклику '!' каже TypeScript, що змінна буде ініціалізована в onModuleInit, а не в конструкторі
-  private raterService!: RaterServiceClient;
+  private raterServiceClient!: RaterServiceClient;
   private readonly version: string;
 
   constructor(
-    @Inject('RATER_PACKAGE') private readonly raterClient: ClientGrpc, // 💡 Згрупували всі інжекції в один конструктор
-    @Inject(SERVICES.ACCOUNTS) private readonly accountsClient: any,
-    @Inject(SERVICES.AUTH) private readonly authService: any,
+    @Inject(SERVICES.RATER) private readonly raterService: ClientGrpc, // 💡 Згрупували всі інжекції в один конструктор
+    @Inject(SERVICES.ACCOUNTS) private readonly accountsService: ClientProxy,
+    @Inject(SERVICES.AUTH) private readonly authService: ClientProxy,
+    @Inject(SERVICES.LOGGER) private readonly loggerService: ClientProxy,
   ) {
     this.version = JSON.parse(
       readFileSync(join(process.cwd(), 'package.json'), 'utf-8'),
@@ -32,24 +34,79 @@ export class ApiController implements OnModuleInit {
 
   onModuleInit() {
     // Отримуємо gRPC сервіс за ім'ям з proto-файлу
-    this.raterService = this.raterClient.getService<RaterServiceClient>('RaterService');
+    this.raterServiceClient = this.raterService.getService<RaterServiceClient>('RaterService');
   }
 
   @Get('health')
-  health() {
-    return rpc.send(this.accountsClient, PATTERNS.SYSTEM.HEALTH, {});
+  async getSystemHealth() {
+    const timeoutMs = 2000;
+
+    // Функція-обгортка, яка обірве запит, якщо сервіс завис
+    const withTimeout = async (promise: Promise<any>, serviceName: string) => {
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout exceeded')), timeoutMs)
+      );
+      try {
+        // Хто швидше: відповідь сервісу чи таймер?
+        return await Promise.race([promise, timeoutPromise]);
+      } catch (err: any) {
+        return {
+          status: 'down',
+          error: `Error checking ${serviceName}: ${err?.message || String(err)}`
+        };
+      }
+    };
+
+    const askHealth = (serviceName: string, client: any) => {
+      const rmqCall = firstValueFrom(rpc.send(client, PATTERNS.SYSTEM.HEALTH, {}));
+      return withTimeout(rmqCall, serviceName);
+    };
+    const authHealthPromise = askHealth(SERVICES.AUTH, this.authService);
+    const accountsHealthPromise = askHealth(SERVICES.ACCOUNTS, this.accountsService);
+    const loggerHealthPromise = askHealth(SERVICES.LOGGER, this.loggerService);
+
+    const raterHealthPromise = withTimeout(
+      firstValueFrom(this.raterServiceClient.checkHealth({})),
+      SERVICES.RATER
+    );
+
+    // Опитуємо ВСЕ паралельно. Promise.all тепер відпрацює миттєво, 
+    // бо всередині кожного промісу вже вшитий свій Promise.race!
+    const [authHealth, accountsHealth, loggerHealth, raterHealth] = await Promise.all([
+      authHealthPromise,
+      accountsHealthPromise,
+      loggerHealthPromise,
+      raterHealthPromise,
+    ]);
+
+    const allGood =
+      authHealth.status === 'ok' && // Terminus повертає 'ok'
+      accountsHealth.status === 'ok' &&
+      loggerHealth.status === 'ok' &&
+      raterHealth.status === 'ok';
+
+    return {
+      status: allGood ? 'ok' : 'error',
+      timestamp: new Date().toISOString(),
+      services: {
+        auth: authHealth,
+        accounts: accountsHealth,
+        logger: loggerHealth,
+        rater: raterHealth
+      }
+    };
   }
 
   @Get('ping')
   accountsPing() {
-    return rpc.send(this.accountsClient, PATTERNS.SYSTEM.PING, { hello: 'from gateway' });
+    return rpc.send(this.accountsService, PATTERNS.SYSTEM.PING, { hello: 'from gateway' });
   }
 
   @Get('pingRater')
   async pingRater() {
     try {
       // firstValueFrom забирає перший івент з потоку gRPC і перетворює на Promise
-      const response = await firstValueFrom(this.raterService.pingRater({}));
+      const response = await firstValueFrom(this.raterServiceClient.pingRater({}));
       return response;
     } catch (error: any) {
       return { error: 'gRPC request failed', details: error.message };
@@ -103,7 +160,7 @@ export class ApiController implements OnModuleInit {
   @UseGuards(AuthGuard('jwt'))
   @Get('balance')
   async getMyBalance(@Req() req) {
-    return rpc.send(this.accountsClient, PATTERNS.ACCOUNT.GET_ACCOUNTS, { userId: req.user.userId });
+    return rpc.send(this.accountsService, PATTERNS.ACCOUNT.GET_ACCOUNTS, { userId: req.user.userId });
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -117,7 +174,7 @@ export class ApiController implements OnModuleInit {
       currency: body.currency,
     };
 
-    return rpc.send(this.accountsClient, PATTERNS.ACCOUNT.CREATE, createAccountDto);
+    return rpc.send(this.accountsService, PATTERNS.ACCOUNT.CREATE, createAccountDto);
   }
 
   @Get('accountsRate')
@@ -128,7 +185,7 @@ export class ApiController implements OnModuleInit {
     try {
       // Відправляємо запит через RabbitMQ в мікросервіс accounts
       const rawResponse = await firstValueFrom(
-        rpc.send(this.accountsClient, PATTERNS.ACCOUNT.GET_RATE, { base, quote })
+        rpc.send(this.accountsService, PATTERNS.ACCOUNT.GET_RATE, { base, quote })
       );
       const response = rawResponse as { rate: number };
       return {
@@ -154,7 +211,7 @@ export class ApiController implements OnModuleInit {
   ) {
     const fromUserId = req.user.userId;
     const fullData = { ...body, fromUserId };
-    return rpc.send(this.accountsClient, PATTERNS.ACCOUNT.TRANSFER, fullData);
+    return rpc.send(this.accountsService, PATTERNS.ACCOUNT.TRANSFER, fullData);
   }
 
 }

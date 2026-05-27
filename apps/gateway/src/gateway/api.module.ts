@@ -1,13 +1,12 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
-import { getRaterProtoPath, RmqModule } from '@app/common';
-import { SERVICES, RABBIT_CONFIG } from '@app/common';
-import { ApiController } from './api.controller';
+import { SERVICES, RABBIT_CONFIG, RmqModule, getRaterProtoPath  } from '@app/common';
 import { JwtStrategy } from '../jwt.strategy';
 import { RolesGuard } from '../roles.guard';
+import { ApiController } from './api.controller';
 
 @Module({
   imports: [
@@ -21,9 +20,10 @@ import { RolesGuard } from '../roles.guard';
     }),
     RmqModule.register(SERVICES.ACCOUNTS, RABBIT_CONFIG.ACCOUNTS_QUEUE),
     RmqModule.register(SERVICES.AUTH, RABBIT_CONFIG.AUTH_QUEUE),
+    RmqModule.register(SERVICES.LOGGER, RABBIT_CONFIG.LOGGER_QUEUE),
     ClientsModule.register([
       {
-        name: 'RATER_PACKAGE',
+        name: SERVICES.RATER,
         transport: Transport.GRPC,
         options: {
           package: 'rater',

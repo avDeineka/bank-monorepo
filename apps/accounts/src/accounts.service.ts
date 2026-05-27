@@ -24,7 +24,7 @@ export class AccountsService implements OnModuleInit {
     private readonly logger: AppLogger,
     @Inject(SERVICES.AUTH) private readonly authClient: ClientProxy,
     @Inject(SERVICES.LOGGER) private readonly loggerClient: ClientProxy,
-    @Inject('RATER_PACKAGE') private readonly client: ClientGrpc,
+    @Inject(SERVICES.RATER) private readonly client: ClientGrpc,
   ) {
     this.logger.setContext(AccountsService.name);
     this.auditLogger = new AuditLoggerService(SERVICES.ACCOUNTS, this.loggerClient);

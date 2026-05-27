@@ -1,12 +1,11 @@
 // app.module.ts
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { LoggerModule } from '@app/common';
-import { DatabaseModule } from '@app/common';
-import { RmqModule } from '@app/common';
-import { SERVICES, RABBIT_CONFIG } from '@app/common';
+import { TerminusModule } from '@nestjs/terminus';
+import { SERVICES, RABBIT_CONFIG, DatabaseModule, LoggerModule, RmqModule } from '@app/common';
 import { UsersModule } from './users.module';
 import { AuthModule } from './auth.module';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -16,11 +15,12 @@ import { AuthModule } from './auth.module';
     }),
     LoggerModule,
     DatabaseModule,
+    TerminusModule,
     UsersModule,
     AuthModule,
     RmqModule.register(SERVICES.GATEWAY, RABBIT_CONFIG.GATEWAY_QUEUE),
   ],
-  controllers: [],
+  controllers: [ HealthController ],
   providers: [],
 })
 export class AppModule {}

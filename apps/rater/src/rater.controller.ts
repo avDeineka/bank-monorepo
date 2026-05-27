@@ -1,6 +1,8 @@
 ﻿// apps/rater/src/rater.controller.ts
-import { Controller, Logger } from '@nestjs/common';
+import { Controller, Inject, Logger } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
+import Redis from 'ioredis';
+import { getMemoryHealthIndicator } from '@app/common';
 import { RaterService } from './rater.service';
 
 // Опишемо інтерфейс вхідних даних для розробника
@@ -13,7 +15,10 @@ interface CrossRateData {
 export class RaterController {
   private readonly logger = new Logger(RaterController.name);
 
-  constructor(private readonly raterService: RaterService) { }
+  constructor(
+    private readonly raterService: RaterService,
+    @Inject('REDIS_CLIENT') private readonly redis: any,
+  ) { }
 
   @GrpcMethod('RaterService', 'GetCrossRate') // 👈 Зв'язуємо з RPC методом у proto
   async getCrossRate(data: CrossRateData) {
@@ -41,6 +46,26 @@ export class RaterController {
       rates: currentCache && Object.keys(currentCache).length > 0
         ? Object.entries(currentCache).map(([k, v]) => `${k}:${v}`).join(', ')
         : 'EMPTY_OR_UNAVAILABLE',
+    };
+  }
+
+  @GrpcMethod('RaterService', 'CheckHealth')
+  async checkHealth(data: any) {
+    let redisStatus = 'up';
+    try {
+      // Перевіряємо Redis за допомогою команди PING
+      const ping = await this.redis.ping();
+      if (ping !== 'PONG') redisStatus = 'down';
+    } catch (err) {
+      redisStatus = 'down';
+    }
+
+    const memory = getMemoryHealthIndicator();
+
+    return {
+      status: redisStatus === 'up' && memory.memory.status === 'up' ? 'ok' : 'error',
+      redis: redisStatus,
+      memory: memory.memory.status, // або розгорни весь об'єкт за бажанням
     };
   }
 }

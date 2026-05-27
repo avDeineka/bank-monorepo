@@ -1,10 +1,8 @@
 ﻿// logger/src/logger.controller.ts
+import { Knex } from 'knex';
 import { Controller, Inject, Logger } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
-import { Knex } from 'knex';
 import { PATTERNS } from '@app/common';
-import { trace } from 'console';
-import { use } from 'passport';
 
 @Controller()
 export class LoggerController {

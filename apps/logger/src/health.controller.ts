@@ -1,8 +1,8 @@
-// apps/accounts/src/health.controller.ts
+﻿// apps/logger/src/health.controller.ts
+import { Knex } from 'knex';
 import { Controller, Inject } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { HealthCheckService } from '@nestjs/terminus';
-import { Knex } from 'knex';
 import { PATTERNS, getMemoryHealthIndicator } from '@app/common';
 
 @Controller() // Чистий, без префіксів

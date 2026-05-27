@@ -1,9 +1,10 @@
 ﻿// logger/src/logger.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { LoggerController } from './logger.controller';
-//import { LoggerService } from './logger.service';
+import { TerminusModule } from '@nestjs/terminus';
 import { DatabaseModule } from '@app/common';
+import { HealthController } from './health.controller';
+import { LoggerController } from './logger.controller';
 
 @Module({
   imports: [
@@ -12,8 +13,9 @@ import { DatabaseModule } from '@app/common';
       envFilePath: '.env',
     }),
     DatabaseModule,
+    TerminusModule,
   ],
-  controllers: [LoggerController],
+  controllers: [ LoggerController, HealthController, ],
   providers: [ /* LoggerService */ ],
 })
 export class LoggerModule { }
