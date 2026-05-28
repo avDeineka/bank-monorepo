@@ -71,6 +71,12 @@ services:
       - DATABASE_URL=postgres://user:password@db:5432/auth_db
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - APP_NAME=auth
+    healthcheck:
+      test: ["CMD-SHELL", "awk '$4 == \"01\" && $3 ~ /:1628$/ { found=1 } END { exit found ? 0 : 1 }' /proc/net/tcp /proc/net/tcp6"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   accounts:
     build:
@@ -93,11 +99,11 @@ services:
       - RATER_GRPC_URL=rater:3004
       - APP_NAME=accounts
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
-      interval: 10s   # Перевіряти кожні 10 секунд
-      timeout: 5s     # Чекати відповіді не більше 5 секунд
-      retries: 3      # Якщо 3 рази поспіль впало — вважати контейнер "unhealthy"
-      start_period: 5s # Дати 5 секунд на запуск мікросервісу перед першою перевіркою
+      test: ["CMD-SHELL", "awk '$4 == \"01\" && $3 ~ /:1628$/ { found=1 } END { exit found ? 0 : 1 }' /proc/net/tcp /proc/net/tcp6"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   logger:
     build:
@@ -115,6 +121,12 @@ services:
       - DATABASE_URL=postgres://user:password@db:5432/audit_db
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - APP_NAME=logger
+    healthcheck:
+      test: ["CMD-SHELL", "awk '$4 == \"01\" && $3 ~ /:1628$/ { found=1 } END { exit found ? 0 : 1 }' /proc/net/tcp /proc/net/tcp6"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   rater:
     build:

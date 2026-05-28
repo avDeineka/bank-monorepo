@@ -1,4 +1,4 @@
-﻿// gateway/api.controller.ts
+// gateway/api.controller.ts
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { firstValueFrom } from 'rxjs';
@@ -83,7 +83,7 @@ export class ApiController implements OnModuleInit {
     ]);
 
     const allGood =
-      gatewayMemory.status === 'up' &&
+      gatewayMemory.memory.status === 'up' &&
       authHealth.status === 'ok' && // Terminus повертає 'ok'
       accountsHealth.status === 'ok' &&
       loggerHealth.status === 'ok' &&
