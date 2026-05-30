@@ -16,6 +16,7 @@ async function bootstrap() {
       },
     },
   );
+  app.enableShutdownHooks();
   await app.listen();
   console.log("🚀 Logger Microservice is listening...");
 }

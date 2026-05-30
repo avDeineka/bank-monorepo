@@ -1,11 +1,20 @@
 ﻿// apps/accounts/src/repositories/accounts.repository.ts
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, OnApplicationShutdown } from '@nestjs/common';
 import { Knex } from 'knex';
 import { AppError, CreateAccountDto, TransferDto } from '@app/common';
 
 @Injectable()
-export class AccountsRepository {
+export class AccountsRepository implements OnApplicationShutdown {
   constructor(@Inject('KNEX_CONNECTION') private readonly knex: Knex) {}
+
+  async onApplicationShutdown(signal: string) {
+    console.log(`\n🛑 [Accounts] Received ${signal}. Closing repository resources gracefully...`);
+
+    // Тут можна виконати якісь специфічні кастомні очищення, якщо треба.
+    // Пул Кнексу закриється сам, але якщо раптом ти захочеш закрити його примусово вручну:
+    // await this.knex.destroy();
+    // console.log(`🔌 [Accounts] Knex connection pool destroyed.`);
+  }
 
   async create(data: CreateAccountDto, trx?: Knex.Transaction) {
     const qb = trx || this.knex;

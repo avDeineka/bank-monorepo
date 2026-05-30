@@ -1,12 +1,12 @@
 ﻿// apps/logger/src/health.controller.ts
 import { Knex } from 'knex';
-import { Controller, Inject } from '@nestjs/common';
+import { Controller, Inject, OnApplicationShutdown } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { HealthCheckService } from '@nestjs/terminus';
 import { PATTERNS, getMemoryHealthIndicator } from '@app/common';
 
 @Controller() // Чистий, без префіксів
-export class HealthController {
+export class HealthController implements OnApplicationShutdown {
   constructor(
     private health: HealthCheckService,
     @Inject('KNEX_CONNECTION') private readonly knex: Knex,
@@ -27,5 +27,10 @@ export class HealthController {
       // 2. Спільний чек пам'яті з libs/common
       () => getMemoryHealthIndicator(),
     ]);
+  }
+
+  async onApplicationShutdown(signal: string) {
+    console.log(`\n🛑 [Logger] Received ${signal}. Closing resources gracefully...`);
+    // Якщо треба буде примусово щось закрити в logger, код пиши сюди
   }
 }

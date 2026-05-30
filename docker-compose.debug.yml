@@ -32,6 +32,8 @@ services:
       - redis_data:/data
 
   gateway:
+    container_name: gateway
+    stop_grace_period: 15s
     build:
       context: .
       args:
@@ -60,6 +62,8 @@ services:
       retries: 3
 
   auth:
+    container_name: auth
+    stop_grace_period: 15s
     build:
       context: .
       args:
@@ -86,6 +90,8 @@ services:
       start_period: 10s
 
   accounts:
+    container_name: accounts
+    stop_grace_period: 15s
     build:
       context: .
       args:
@@ -113,6 +119,8 @@ services:
       start_period: 10s
 
   logger:
+    container_name: logger
+    stop_grace_period: 15s
     build:
       context: .
       args:
@@ -136,6 +144,8 @@ services:
       start_period: 10s
 
   rater:
+    container_name: rater
+    stop_grace_period: 15s
     build:
       context: .
       args:

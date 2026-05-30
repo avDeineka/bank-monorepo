@@ -1,11 +1,9 @@
 // auth/main.ts
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { RABBIT_CONFIG } from '@app/common';
-import { AppLogger } from '@app/common';
-import { RmqTraceInterceptor } from '@app/common';
 //import { AllExceptionsRpcFilter } from '@app/common';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { RABBIT_CONFIG, AppLogger, RmqTraceInterceptor } from '@app/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -20,6 +18,7 @@ async function bootstrap() {
       },
     },
   );
+  app.enableShutdownHooks();
   const logger = app.get(AppLogger);
   app.useLogger(logger);
   app.useGlobalPipes(new ValidationPipe({
