@@ -13,6 +13,7 @@ async function bootstrap() {
       url: '0.0.0.0:3004', // порт, який ми виділили в docker-compose
     },
   });
+  app.enableShutdownHooks();
 
   await app.listen();
   console.log('🚀 Rater gRPC microservice is running on port 3004');

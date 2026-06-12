@@ -1,5 +1,5 @@
 ﻿// apps/rater/src/rater.controller.ts
-import { Controller, Inject, Logger } from '@nestjs/common';
+import { Controller, Inject, Logger, OnApplicationShutdown } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import Redis from 'ioredis';
 import { getMemoryHealthIndicator } from '@app/common';
@@ -12,13 +12,26 @@ interface CrossRateData {
 }
 
 @Controller()
-export class RaterController {
+export class RaterController implements OnApplicationShutdown {
   private readonly logger = new Logger(RaterController.name);
 
   constructor(
     private readonly raterService: RaterService,
-    @Inject('REDIS_CLIENT') private readonly redis: any,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) { }
+
+  async onApplicationShutdown(signal: string) {
+    console.log(`\n🛑 [Rater] Received ${signal}. Stopping gRPC server...`);
+
+    try {
+      console.log(`🔌 [Rater] Disconnecting from Redis...`);
+      // Елегантне закриття з'єднання з Redis (чекає поточні команди)
+      await this.redis.quit();
+      console.log(`✅ [Rater] Redis connection closed successfully.`);
+    } catch (err) {
+      console.error(`❌ [Rater] Error closing Redis connection:`, err);
+    }
+  }
 
   @GrpcMethod('RaterService', 'GetCrossRate') // 👈 Зв'язуємо з RPC методом у proto
   async getCrossRate(data: CrossRateData) {
@@ -26,7 +39,6 @@ export class RaterController {
 
     try {
       const rate = await this.raterService.calculateCrossRate(data.base, data.quote);
-
       return {
         rate: rate // 👈 Повертаємо double rate згідно специфікації CrossRateResponse
       };
@@ -59,9 +71,7 @@ export class RaterController {
     } catch (err) {
       redisStatus = 'down';
     }
-
     const memory = getMemoryHealthIndicator();
-
     return {
       status: redisStatus === 'up' && memory.memory.status === 'up' ? 'ok' : 'error',
       redis: redisStatus,

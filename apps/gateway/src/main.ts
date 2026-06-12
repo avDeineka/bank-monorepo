@@ -1,14 +1,14 @@
-import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from "@nestjs/microservices";
-import { RABBIT_CONFIG } from '@app/common';
-import { AppLogger } from '@app/common';
+import { RABBIT_CONFIG, AppLogger } from '@app/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true, // Це дозволить логеру чекати на ініціалізацію модулів
   });
+  app.enableShutdownHooks();
 
   const logger = app.get(AppLogger);
   app.useLogger(logger); // Тепер AppLogger — головний у домі
