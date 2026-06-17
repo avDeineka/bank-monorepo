@@ -29,6 +29,18 @@ services:
     volumes:
       - redis_data:/data
 
+  web:
+    container_name: web
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NEXT_PUBLIC_GATEWAY_URL=http://localhost:2999
+      - INTERNAL_GATEWAY_URL=http://gateway:2999
+
   gateway:
     container_name: gateway
     stop_grace_period: 15s
@@ -38,7 +50,7 @@ services:
         APP_NAME: gateway
         BUILD_MODE: debug
     ports:
-      - "3000:3000"
+      - "2999:2999"
       - "9230:9229"
     depends_on:
       - accounts
@@ -46,6 +58,7 @@ services:
       - logger
       - rater
     environment:
+      - PORT=2999
       - JWT_SECRET=${JWT_SECRET}
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - ACCOUNTS_HOST=accounts
@@ -54,7 +67,7 @@ services:
       - RATER_HOST=rater
       - APP_NAME=gateway
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2999/api/health"]
       interval: 15s
       timeout: 5s
       retries: 3

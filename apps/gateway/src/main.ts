@@ -31,7 +31,11 @@ async function bootstrap() {
   });
 
   await app.startAllMicroservices();
-  await app.listen(process.env.PORT ?? 3000);
+  app.enableCors({
+    origin: 'http://localhost:3000', // URL нашого Next.js фронтенду
+    credentials: true,               // Критично важливо для кук, які ми підключимо далі
+  });
+  await app.listen(process.env.PORT ?? 2999);
   console.log(`🚀 Gateway service is listening...`);
 }
 bootstrap();

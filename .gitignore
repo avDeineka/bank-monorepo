@@ -3,6 +3,13 @@
 /node_modules
 /build
 
+# Next.js build output
+.next/
+out/
+
+# Папка з конфігом Turbopack/Next (якщо з'явиться)
+.next_build_env
+
 # Logs
 logs
 *.log
