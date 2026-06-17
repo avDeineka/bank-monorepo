@@ -46,6 +46,7 @@
     "class-validator": "^0.15.1",
     "dotenv": "^17.3.1",
     "ioredis": "^5.10.1",
+    "js-cookie": "^3.0.8",
     "knex": "^3.1.0",
     "nest-knexjs": "^0.0.34",
     "next": "^16.2.9",
@@ -70,6 +71,7 @@
     "@types/cron": "^2.0.1",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^22.10.7",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
@@ -117,5 +119,12 @@
     "moduleNameMapper": {
       "^@app/common(|/.*)$": "<rootDir>/libs/common/src/$1"
     }
+  },
+  "allowScripts": {
+    "@nestjs/core@11.1.19": true,
+    "bcrypt@6.0.0": true,
+    "protobufjs@7.6.4": true,
+    "sharp@0.34.5": true,
+    "unrs-resolver@1.12.2": true
   }
 }
