@@ -55,7 +55,7 @@ export default function LoginForm() {
       } else {
         // Якщо це був вхід — зберігаємо токен в ІЗОЛЬОВАНУ куку на 1 день
         // expires: 1 означає 24 години
-        Cookies.set('nest_bank_session_token', data.accessToken, { 
+        Cookies.set('nest_bank_session_token', data.access_token, { 
           expires: 1, 
           secure: process.env.NODE_ENV === 'production', // true тільки на продакшені (HTTPS)
           sameSite: 'strict'
