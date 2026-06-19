@@ -15,6 +15,7 @@ export const PATTERNS = {
     GET_ACCOUNTS: 'account.get_accounts',
     GET_RATE: 'account.get_rate',
     TRANSFER: 'account.transfer',
+    GET_TRANSFERS: 'account.get_transfers',
   },
   SYSTEM: {
     HEALTH: 'system.health',

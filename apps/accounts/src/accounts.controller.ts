@@ -65,4 +65,23 @@ export class AccountsController {
     }
   }
 
+  @MessagePattern({ cmd: PATTERNS.ACCOUNT.GET_TRANSFERS })
+  async getTransfers(@Payload() data: { userId: number, accountId: number }) {
+    //try {
+      const { userId, accountId } = data;
+      return await this.accountsService.getTransfers(userId, accountId);
+    /*} catch (error: any) {
+      const message = error instanceof Error ? error.message : String(error);
+      const statusCode = error?.statusCode || 500;
+
+      this.logger.error(`❌ GetTransfers failed: ${message}`);
+      throw new RpcException({
+        code: 'GET_TRANSFERS_FAILED',
+        message,
+        status: 'error',
+        statusCode,
+      });
+    }*/
+  }
+
 }

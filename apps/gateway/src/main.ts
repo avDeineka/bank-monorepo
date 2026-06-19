@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from "@nestjs/microservices";
 import { RABBIT_CONFIG, AppLogger } from '@app/common';
 import { AppModule } from './app.module';
+import { GatewayExceptionFilter } from './filters/gateway-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -35,6 +36,7 @@ async function bootstrap() {
     origin: 'http://localhost:3000', // URL нашого Next.js фронтенду
     credentials: true,               // Критично важливо для кук, які ми підключимо далі
   });
+  app.useGlobalFilters(new GatewayExceptionFilter());
   await app.listen(process.env.PORT ?? 2999);
   console.log(`🚀 Gateway service is listening...`);
 }

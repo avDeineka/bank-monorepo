@@ -1,7 +1,8 @@
 ﻿// accounts/src/accounts.service.ts
-import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
+import { Injectable, Inject, OnModuleInit, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import type { ClientGrpc } from '@nestjs/microservices';
+import { RpcException } from '@nestjs/microservices';
 import { firstValueFrom, Observable } from 'rxjs';
 import { CreateAccountDto, TransferDto } from '@app/common';
 import { SERVICES, PATTERNS, AppError, AuditLoggerService, AppLogger, getErrorMessage, rpc, traceStorage } from '@app/common';
@@ -109,6 +110,30 @@ export class AccountsService implements OnModuleInit {
       this.auditLogger.log('TRANSFER_FAILED', { from: fromAccountId, to: toAccountId, amount, message: error.message }, fromUserId);
       throw error;
     }
+  }
+
+  async getTransfers (user_id: number, accountId: number) {
+    const account = await this.accountsRepo.getAccountOwner(accountId);
+    if (!account) {
+      throw new RpcException({
+        code: 'ACCOUNT_NOT_FOUND',
+        message: `Account #${accountId} not found`,
+        status: 'error',
+        statusCode: 404,
+      });
+
+      // throw new NotFoundException(`Account #${accountId} not found`);
+    }
+    if (account.user_id !== user_id) {
+      throw new RpcException({
+        code: 'FORBIDDEN',
+        message: `No permission to access account #${accountId}`,
+        status: 'error',
+        statusCode: 403,
+      });
+    }
+    const transfers = await this.accountsRepo.getTransfers(user_id, accountId);
+    return { success: true, data: transfers};
   }
 
   async getRateFromRater(base: string, quote: string): Promise<number> {

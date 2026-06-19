@@ -1,8 +1,8 @@
-// gateway/api.controller.ts
+﻿// gateway/api.controller.ts
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { firstValueFrom } from 'rxjs';
-import { Controller, Inject, Get, OnModuleInit, Post, Body, Param, Query, Req, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Inject, Get, OnModuleInit, Post, Body, Param, Query, Res, Req, ParseIntPipe, UseGuards } from '@nestjs/common';
 import type { ClientProxy, ClientGrpc } from '@nestjs/microservices';
 import { AuthGuard } from '@nestjs/passport';
 import { getMemoryHealthIndicator } from '@app/common';
@@ -158,6 +158,17 @@ export class ApiController implements OnModuleInit {
     return rpc.send(this.authService, PATTERNS.USER.LOGIN, { email: loginDto.email, password: loginDto.password });
   }
 
+  @Get('logout')
+  async logout(@Res({ passthrough: true }) response: any) {
+    // Наказуємо браузеру стерти куку, виставивши термін дії в минуле
+    response.cookie('nest_bank_session_token', '', {
+      expires: new Date(0),
+      httpOnly: false, // щоб js-cookie на фронті теж бачив, що вона порожня
+      path: '/',
+    });
+    return { success: true, message: 'Logged out successfully' };
+  }
+
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
   me(@Req() req) {
@@ -183,6 +194,12 @@ export class ApiController implements OnModuleInit {
     };
 
     return rpc.send(this.accountsService, PATTERNS.ACCOUNT.CREATE, createAccountDto);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('transfers')
+  transfers(@Query('accountId', ParseIntPipe) accountId: number, @Req() req) {
+    return rpc.send(this.accountsService, PATTERNS.ACCOUNT.GET_TRANSFERS, { userId: req.user.userId, accountId });
   }
 
   @Get('accountsRate')

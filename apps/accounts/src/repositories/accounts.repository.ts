@@ -40,6 +40,33 @@ export class AccountsRepository implements OnApplicationShutdown {
       .orderBy('currency', 'asc');
   }
 
+  async getAccountOwner(accountId: number): Promise<{ user_id: number } | null> {
+    const account = await this.knex('accounts')
+      .select('user_id')
+      .where('id', accountId)
+      .first();
+    return account || null;
+  }
+
+  async getTransfers(user_id: number, accountId: number) {
+    return this.knex('transfers')
+      .join('accounts as from_acc', 'transfers.from_account_id', 'from_acc.id')
+      .join('accounts as to_acc', 'transfers.to_account_id', 'to_acc.id')
+      .select(
+        'transfers.*',
+        'from_acc.iban as from_iban',
+        'to_acc.iban as to_iban'
+      ) // 👈 Порада: краще вибрати конкретні поля, щоб ID аккаунтів не перезаписали ID трансферу!
+      .where(function () {
+        this.where(function () {
+          this.where('from_acc.id', accountId).andWhere('from_acc.user_id', user_id);
+        }).orWhere(function () {
+          this.where('to_acc.id', accountId).andWhere('to_acc.user_id', user_id);
+        });
+      })
+      .orderBy('transfers.created_at', 'desc');
+  }
+  
   async executeTransfer(
     fromUserId: number,
     data: TransferDto,
