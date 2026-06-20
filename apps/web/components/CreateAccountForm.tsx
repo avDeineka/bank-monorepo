@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Cookies from 'js-cookie';
+import { GATEWAY_URL } from '../config';
 
 // Фіксований список валют з нашої бізнес-домови
 const ALL_SUPPORTED_CURRENCIES = ['USD', 'EUR', 'GBP', 'CHF'];
@@ -40,7 +41,7 @@ export default function CreateAccountForm({ existingCurrencies }: CreateAccountF
     try {
       const token = Cookies.get('nest_bank_session_token');
       
-      const res = await fetch('http://localhost:2999/api/accounts', {
+      const res = await fetch(`${GATEWAY_URL}/api/accounts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

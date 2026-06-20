@@ -1,4 +1,5 @@
 ﻿import React from 'react';
+import { GATEWAY_URL } from '../config'; 
 import LoginForm from '../components/LoginForm';
 
 // змушуємо Next.js рендерити сторінку виключно on-request
@@ -6,14 +7,8 @@ export const dynamic = 'force-dynamic';
 
 async function getExchangeRates() {
   try {
-    // 2. Рішення пастки №2: беремо внутрішній URL для сервера.
-    // Якщо запускаємо локально (npm run start:web) -> підтягнеться localhost:2999
-    // Якщо запускаємо в Docker -> підтягнеться http://gateway:2999 (додамо в env)
-    const gatewayUrl = process.env.INTERNAL_GATEWAY_URL || 'http://localhost:2999';
-    
-    console.log(`📡 [Next.js Server] Fetching rates from: ${gatewayUrl}/api/pingRater`);
-
-    const res = await fetch(`${gatewayUrl}/api/pingRater`, { 
+    console.log(`📡 [Next.js Server] Fetching rates from: ${GATEWAY_URL}/api/pingRater`);
+    const res = await fetch(`${GATEWAY_URL}/api/pingRater`, { 
       cache: 'no-store',
       headers: { 'Content-Type': 'application/json' }
     });

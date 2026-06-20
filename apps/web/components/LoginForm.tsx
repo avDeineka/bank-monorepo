@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Cookies from 'js-cookie';
+import { GATEWAY_URL } from '../config';
 
 export default function LoginForm() {
   // Перемикач режиму: false = Login (Вхід), true = Register (Реєстрація)
@@ -24,8 +25,6 @@ export default function LoginForm() {
     setSuccessMessage(null);
 
     try {
-      const gatewayUrl = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:2999';
-      
       // Визначаємо правильний ендпоінт залежно від режиму
       const endpoint = isSignUp ? '/api/register' : '/api/login';
       
@@ -35,7 +34,7 @@ export default function LoginForm() {
         bodyData.name = name; // Додаємо ім'я, тільки якщо це реєстрація
       }
 
-      const res = await fetch(`${gatewayUrl}${endpoint}`, {
+      const res = await fetch(`${GATEWAY_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bodyData),

@@ -2,6 +2,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { GATEWAY_URL } from '../../../config';
 import Header from '../../../components/Header';
 import TransferManagerStandalone from '../../../components/TransferManagerStandalone';
 
@@ -26,7 +27,7 @@ interface UserProfile {
 
 async function getUserProfile(token: string): Promise<UserProfile | null> {
   try {
-    const res = await fetch('http://localhost:2999/api/me', {
+    const res = await fetch(`${GATEWAY_URL}/api/me`, {
       method: 'GET',
       cache: 'no-store',
       headers: { 'Authorization': `Bearer ${token}` },

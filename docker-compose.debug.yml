@@ -32,15 +32,26 @@ services:
       - redis_data:/data
 
   web:
-    container_name: next_web
+    container_name: web
     build:
       context: .
-      dockerfile: apps/web/Dockerfile # Ми напишемо його згодом, зараз запускаємо через npm run start:web
+      dockerfile: apps/web/Dockerfile
     ports:
       - "3000:3000"
+    restart: always
+    depends_on:
+      gateway:
+        condition: service_healthy # 👈 Чекаємо, поки NestJS шлюз повністю прокинеться і пройде healthcheck
     environment:
       - PORT=3000
+      - NODE_ENV=production
+      # Ця лінка полетить у браузер клієнта:
       - NEXT_PUBLIC_GATEWAY_URL=http://localhost:2999
+      # Цю лінку ми використовуємо для Logout в шлюзі:
+      - FRONTEND_URL=http://localhost:3000/
+      # Якщо твій SSR робить серверні запити під час рендерингу (наприклад, fetch у page.tsx):
+      # Переконайся, що функція getUserData() або аналогічні на серверній стороні Next.js
+      # використовують саме цей хост, якщо працюють в Docker, або підміняють його.
       - INTERNAL_GATEWAY_URL=http://gateway:2999
 
   gateway:
@@ -69,10 +80,12 @@ services:
       - RATER_HOST=rater
       - APP_NAME=gateway
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2999/api/health"]
-      interval: 30s
+      # Перевіряємо, чи відкрився порт 2999 всередині контейнера за допомогою Node.js
+      test: ["CMD-SHELL", "node -e \"const net = require('net'); const client = net.connect({port: 2999, host: 'localhost'}, () => { client.end(); process.exit(0); }); client.on('error', () => process.exit(1));\""]
+      interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 5s
 
   auth:
     container_name: auth

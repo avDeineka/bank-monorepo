@@ -2,6 +2,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { GATEWAY_URL } from '../../config';
 import Header from '../../components/Header';
 import CreateAccountForm from '../../components/CreateAccountForm'; // 👈 Новий компонент форми
 
@@ -26,7 +27,7 @@ interface UserProfile {
 
 async function getUserData(token: string): Promise<UserProfile | null> {
   try {
-    const res = await fetch('http://localhost:2999/api/me', {
+    const res = await fetch(`${GATEWAY_URL}/api/me`, { // 👈 Тепер тут гнучка адреса
       method: 'GET',
       cache: 'no-store',
       headers: {

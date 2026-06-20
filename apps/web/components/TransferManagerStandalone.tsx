@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
+import { GATEWAY_URL } from '../config';
 
 interface BankAccount {
   id: number;
@@ -43,7 +44,7 @@ export default function TransferManagerStandalone({ initialAccount }: { initialA
     setLoadingTransfers(true);
     try {
       const token = Cookies.get('nest_bank_session_token');
-      const res = await fetch(`http://localhost:2999/api/transfers?accountId=${initialAccount.id}`, {
+      const res = await fetch(`${GATEWAY_URL}/api/transfers?accountId=${initialAccount.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await res.json();
@@ -69,7 +70,7 @@ export default function TransferManagerStandalone({ initialAccount }: { initialA
 
     try {
       const token = Cookies.get('nest_bank_session_token');
-      const res = await fetch('http://localhost:2999/api/transfer', {
+      const res = await fetch(`${GATEWAY_URL}/api/transfer`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
