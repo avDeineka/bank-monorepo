@@ -51,21 +51,20 @@ export class RaterService implements OnModuleInit {
         if (rates && Object.keys(rates).length > 0) {
           // Зберігаємо в Redis
           await this.redis.hset('rates', rates);
+          // 🔥 Виставляємо час життя (TTL) для всього ключа 'rates' на 1 годину (3600 сек)
+          await this.redis.expire('rates', 3600);
 
           // Запам'ятовуємо успішного провайдера
           this.currentProviderName = provider.name;
 
-          this.logger.log(`✅ Rates successfully updated in Redis using [${provider.name}].`);
-          return rates; // Успіх! Повертаємо дані та виходимо
+          this.logger.log(`✅ Rates successfully updated in Redis using [${provider.name}] (TTL: 1h).`);
+          return rates;
         }
       } catch (error: any) {
         this.logger.warn(`❌ Provider [${provider.name}] failed: ${error.message}. Trying next one...`);
       }
     }
-
-    // Якщо цикл закінчився, а return не спрацював — значить, лягли всі провайдери
-    this.logger.error('🚨 CRITICAL: All rate providers failed! Redis cache is stale.');
-    throw new Error('All exchange rate providers are currently unavailable');
+    throw new Error('All rate providers failed to sync.');
   }
 
   /**
@@ -85,8 +84,24 @@ export class RaterService implements OnModuleInit {
   /**
    * Чистий метод для майбутнього сервісу конвертації
    */
-  async getLiveRates(): Promise<Record<string, string>> {
-    return this.redis.hgetall('rates');
+  async getRates(): Promise<Record<string, number>> {
+    // 1. Пробуємо взяти курси з Redis
+    const cachedRates = await this.redis.hgetall('rates');
+
+    if (cachedRates && Object.keys(cachedRates).length > 0) {
+      this.logger.log('🎯 Rates retrieved from Redis cache.');
+
+      // Перетворюємо рядки з Redis назад у числа
+      const parsedRates: Record<string, number> = {};
+      for (const [key, value] of Object.entries(cachedRates)) {
+        parsedRates[key] = parseFloat(value as string);
+      }
+      return parsedRates;
+    }
+
+    // 2. Якщо в Redis порожньо — запускаємо наш syncRates (який смикає провайдерів)
+    this.logger.warn('⚠️ Redis cache is empty! Fetching live rates from providers...');
+    return await this.syncRates();
   }
 
   /**
@@ -97,7 +112,7 @@ export class RaterService implements OnModuleInit {
   }
 
   async calculateCrossRate(base: string, quote: string): Promise<number> {
-    const rates = await this.getLiveRates(); // Отримуємо Record<string, string> з Redis
+    const rates = await this.getRates(); // Отримуємо Record<string, string> з Redis
 
     if (!rates || Object.keys(rates).length === 0) {
       throw new Error('Exchange rates cache is empty or unavailable');
@@ -107,8 +122,8 @@ export class RaterService implements OnModuleInit {
     const baseAsset = base.toUpperCase();
     const quoteAsset = quote.toUpperCase();
 
-    const baseRate = parseFloat(rates[baseAsset]);
-    const quoteRate = parseFloat(rates[quoteAsset]);
+    const baseRate = rates[baseAsset];
+    const quoteRate = rates[quoteAsset];
 
     if (!baseRate || !quoteRate) {
       throw new Error(`Rate not found for one of the currencies: ${baseAsset} or ${quoteAsset}`);

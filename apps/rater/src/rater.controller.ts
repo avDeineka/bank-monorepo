@@ -51,7 +51,7 @@ export class RaterController implements OnApplicationShutdown {
 
   @GrpcMethod('RaterService', 'PingRater')
   async pingRater() {
-    const currentCache = await this.raterService.getLiveRates();
+    const currentCache = await this.raterService.getRates();
     return {
       status: 'ok',
       provider: this.raterService.getCurrentProvider(),

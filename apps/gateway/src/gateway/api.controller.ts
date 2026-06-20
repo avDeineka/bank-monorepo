@@ -2,7 +2,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { firstValueFrom } from 'rxjs';
-import { Controller, Inject, Get, OnModuleInit, Post, Body, Param, Query, Res, Req, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Inject, Get, OnModuleInit, Body, Param, Post, Redirect, Res, Req, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
 import type { ClientProxy, ClientGrpc } from '@nestjs/microservices';
 import { AuthGuard } from '@nestjs/passport';
 import { getMemoryHealthIndicator } from '@app/common';
@@ -159,14 +159,16 @@ export class ApiController implements OnModuleInit {
   }
 
   @Get('logout')
+  @Redirect(process.env.FRONTEND_URL || 'http://localhost:3000/', 302)
   async logout(@Res({ passthrough: true }) response: any) {
-    // Наказуємо браузеру стерти куку, виставивши термін дії в минуле
+    // Наказуємо браузеру стерти куку
     response.cookie('nest_bank_session_token', '', {
       expires: new Date(0),
-      httpOnly: false, // щоб js-cookie на фронті теж бачив, що вона порожня
+      httpOnly: false,
       path: '/',
     });
-    return { success: true, message: 'Logged out successfully' };
+
+  // повертати об'єкт не треба, NestJS сам надішле статус 302 та перенаправить браузер
   }
 
   @UseGuards(AuthGuard('jwt'))

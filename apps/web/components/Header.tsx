@@ -23,7 +23,6 @@ export default function Header({ userName, userEmail }: HeaderProps) {
           </div>
           <a
             href="http://localhost:2999/api/logout"
-            onClick={`document.cookie = "nest_bank_session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";`}
             className="px-3 py-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg text-xs font-medium transition text-center"
           >
             Sign Out

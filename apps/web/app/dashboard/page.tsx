@@ -2,6 +2,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link'; // 👈 Додаємо лінк для переходу
+import Header from '../../components/Header';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,31 +51,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
       
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-3xl">🏦</span>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Nest Bank</h1>
-              <p className="text-xs text-slate-400 font-mono">Client Dashboard</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-semibold text-slate-800">{user.name}</p>
-              <p className="text-xs text-slate-400 font-mono">{user.email}</p>
-            </div>
-            <a 
-              href="http://localhost:2999/api/logout"
-              onClick={`document.cookie = "nest_bank_session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";`}
-              className="px-3 py-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg text-xs font-medium transition"
-            >
-              Sign Out
-            </a>
-          </div>
-        </div>
-      </header>
+      <Header userName={user.name} userEmail={user.email} />
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
