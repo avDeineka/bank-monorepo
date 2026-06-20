@@ -1,8 +1,9 @@
 ﻿import React from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import Link from 'next/link'; // 👈 Додаємо лінк для переходу
+import Link from 'next/link';
 import Header from '../../components/Header';
+import CreateAccountForm from '../../components/CreateAccountForm'; // 👈 Новий компонент форми
 
 export const dynamic = 'force-dynamic';
 
@@ -48,14 +49,17 @@ export default async function DashboardPage() {
   const user = await getUserData(token);
   if (!user) redirect('/');
 
+  // Збираємо масив валют, які вже є в юзера (наприклад: ['USD', 'EUR'])
+  const existingCurrencies = user.accounts ? user.accounts.map(acc => acc.currency) : [];
+
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
-      
+
       <Header userName={user.name} userEmail={user.email} />
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-        
+
         {/* Welcome */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -65,17 +69,17 @@ export default async function DashboardPage() {
         </div>
 
         {/* Секція рахунків */}
-        <div>
-          <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <span>💳</span> My Active Accounts <span className="text-xs font-normal text-slate-400">(Select to open)</span>
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {user.accounts && user.accounts.length > 0 ? (
               user.accounts.map((acc) => (
-                <Link 
-                  href={`/dashboard/${acc.id}`} // 👈 Перехід на динамічний роут!
-                  key={acc.id} 
+                <Link
+                  href={`/dashboard/${acc.id}`}
+                  key={acc.id}
                   className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm relative overflow-hidden group hover:border-indigo-500 hover:shadow-md block transition-all"
                 >
                   <div className="absolute -right-4 -bottom-6 text-7xl font-black text-slate-50 opacity-[0.03] select-none font-mono group-hover:opacity-[0.06] transition">
@@ -83,14 +87,14 @@ export default async function DashboardPage() {
                   </div>
 
                   <div className="flex items-center justify-between mb-4">
-                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold font-mono tracking-wider ${
-                      acc.currency === 'USD' ? 'bg-green-50 text-green-700 border border-green-200' :
-                      acc.currency === 'EUR' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                      'bg-purple-50 text-purple-700 border border-purple-200'
-                    }`}>
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold font-mono tracking-wider ${acc.currency === 'USD' ? 'bg-green-50 text-green-700 border border-green-200' :
+                        acc.currency === 'EUR' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                          acc.currency === 'GBP' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                            'bg-purple-50 text-purple-700 border border-purple-200'
+                      }`}>
                       {acc.currency} Account
                     </span>
-                    <span className="text-xs text-slate-400 font-mono group-hover:text-indigo-600 font-bold transition">Manage ➔</span>
+                    <span className="text-xs text-slate-400 group-hover:text-indigo-600 font-bold transition">Manage ➔</span>
                   </div>
 
                   <div className="mb-4">
@@ -111,10 +115,17 @@ export default async function DashboardPage() {
               ))
             ) : (
               <div className="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400">
-                ⚠️ No bank accounts linked to this user yet.
+                ⚠️ No active bank accounts found. Use the form below to open your first account!
               </div>
             )}
           </div>
+        </div>
+
+        <hr className="border-slate-200" />
+
+        {/* 🎯 Форма створення нового рахунку під плитками */}
+        <div className="max-w-md">
+          <CreateAccountForm existingCurrencies={existingCurrencies} />
         </div>
 
       </main>
