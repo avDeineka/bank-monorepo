@@ -2,9 +2,10 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { SESSION_COOKIE_NAME } from '@app/common/constants/auth';
 import { GATEWAY_URL } from '../../../config';
 import Header from '../../../components/Header';
-import TransferManagerStandalone from '../../../components/TransferManagerStandalone';
+import TransferManager from '../../../components/TransferManager';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ interface PageProps {
 export default async function AccountDetailPage({ params }: PageProps) {
   const { accountId } = await params;
   const cookieStore = await cookies();
-  const token = cookieStore.get('nest_bank_session_token')?.value;
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
   if (!token) redirect('/');
 
@@ -76,7 +77,7 @@ export default async function AccountDetailPage({ params }: PageProps) {
         </div>
 
         {/* Робоча зона */}
-        <TransferManagerStandalone initialAccount={account} />
+        <TransferManager initialAccount={account} />
 
       </main>
     </div>

@@ -2,6 +2,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { SESSION_COOKIE_NAME } from '@app/common/constants/auth';
 import { GATEWAY_URL } from '../../config';
 import Header from '../../components/Header';
 import CreateAccountForm from '../../components/CreateAccountForm'; // 👈 Новий компонент форми
@@ -44,7 +45,7 @@ async function getUserData(token: string): Promise<UserProfile | null> {
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
-  const token = cookieStore.get('nest_bank_session_token')?.value;
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
   if (!token) redirect('/');
   const user = await getUserData(token);

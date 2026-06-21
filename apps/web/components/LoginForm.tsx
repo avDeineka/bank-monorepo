@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Cookies from 'js-cookie';
+import { SESSION_COOKIE_NAME } from '@app/common/constants/auth';
 import { GATEWAY_URL } from '../config';
 
 export default function LoginForm() {
@@ -54,13 +55,13 @@ export default function LoginForm() {
       } else {
         // Якщо це був вхід — зберігаємо токен в ІЗОЛЬОВАНУ куку на 1 день
         // expires: 1 означає 24 години
-        Cookies.set('nest_bank_session_token', data.access_token, { 
+        Cookies.set(SESSION_COOKIE_NAME, data.access_token, { 
           expires: 1, 
           secure: process.env.NODE_ENV === 'production', // true тільки на продакшені (HTTPS)
           sameSite: 'strict'
         });
 
-        console.log('🔒 Token saved to nest_bank_session_token');
+        console.log(`🔒 Token saved to ${SESSION_COOKIE_NAME}`);
         
         // Перенаправляємо користувача на дашборд
         // Оскільки сторінки /dashboard ще нема, браузер покаже 404, але ми побачимо сам факт редіректу!

@@ -7,6 +7,7 @@ import type { ClientProxy, ClientGrpc } from '@nestjs/microservices';
 import { AuthGuard } from '@nestjs/passport';
 import { getMemoryHealthIndicator } from '@app/common';
 import { SERVICES, PATTERNS, ROLES, CreateAccountDto, CreateUserDto, LoginDto, OpenAccountDto, SetRoleDto, TransferDto, rpc } from '@app/common';
+import { SESSION_COOKIE_NAME } from '@app/common';
 import { Roles } from '../roles.decorator';
 import { RolesGuard } from '../roles.guard';
 
@@ -162,7 +163,7 @@ export class ApiController implements OnModuleInit {
   @Redirect(process.env.FRONTEND_URL || 'http://localhost:3000/', 302)
   async logout(@Res({ passthrough: true }) response: any) {
     // Наказуємо браузеру стерти куку
-    response.cookie('nest_bank_session_token', '', {
+    response.cookie(SESSION_COOKIE_NAME, '', {
       expires: new Date(0),
       httpOnly: false,
       path: '/',

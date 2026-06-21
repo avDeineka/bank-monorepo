@@ -17,6 +17,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
+    "paths": {
+      "@app/common/constants/*": [
+        "../../libs/common/src/constants/*"
+      ]
+    },
     "plugins": [
       {
         "name": "next"

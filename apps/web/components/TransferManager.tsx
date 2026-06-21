@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
+import { SESSION_COOKIE_NAME } from '@app/common/constants/auth';
 import { GATEWAY_URL } from '../config';
 
 interface BankAccount {
@@ -27,7 +28,7 @@ interface Transfer {
   to_iban: string;
 }
 
-export default function TransferManagerStandalone({ initialAccount }: { initialAccount: BankAccount }) {
+export default function TransferManager({ initialAccount }: { initialAccount: BankAccount }) {
   // Керуємо балансом прямо в стейті для миттєвого оновлення на екрані!
   const [currentBalance, setCurrentBalance] = useState<number>(parseFloat(initialAccount.balance));
   const [transfers, setTransfers] = useState<Transfer[]>([]);
@@ -43,7 +44,7 @@ export default function TransferManagerStandalone({ initialAccount }: { initialA
   const fetchTransfers = async () => {
     setLoadingTransfers(true);
     try {
-      const token = Cookies.get('nest_bank_session_token');
+      const token = Cookies.get(SESSION_COOKIE_NAME);
       const res = await fetch(`${GATEWAY_URL}/api/transfers?accountId=${initialAccount.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -69,7 +70,7 @@ export default function TransferManagerStandalone({ initialAccount }: { initialA
     const transferAmount = Number(amount);
 
     try {
-      const token = Cookies.get('nest_bank_session_token');
+      const token = Cookies.get(SESSION_COOKIE_NAME);
       const res = await fetch(`${GATEWAY_URL}/api/transfer`, {
         method: 'POST',
         headers: {
