@@ -5,6 +5,7 @@
 ## Stack
 
 - NestJS monorepo
+- Next.js web UI in `apps/web`
 - RabbitMQ для міжсервісної взаємодії
 - PostgreSQL через Knex
 - gRPC та Redis у мікросервісі rater
@@ -15,6 +16,10 @@
 - `apps/gateway`
   - HTTP entrypoint
   - проксіює запити в мікросервіси через RMQ
+- `apps/web`
+  - публічний Next.js інтерфейс
+  - робить HTTP-запити в `gateway`
+  - не містить доменної логіки мікросервісів
 - `apps/auth`
   - користувачі, реєстрація, логін
   - зберігає user-дані
@@ -59,6 +64,7 @@ DTO виносяться в `libs/common/src/dto`.
   - `GBP`
   - `CHF`
 - `accounts` може створювати акаунт не лише як частину реєстрації
+- `web` працює як окремий Next.js UI і спілкується лише з `gateway` через HTTP, використовуючи `NEXT_PUBLIC_GATEWAY_URL` для браузера та `INTERNAL_GATEWAY_URL` для SSR у Docker
 
 ## Important Decisions
 
@@ -72,6 +78,7 @@ DTO виносяться в `libs/common/src/dto`.
 - Якщо логіка використовується в saga і як окрема доменна операція, краще:
   - лишати загальний service-метод
   - saga-оркестрацію тримати окремо, а не змішувати з базовою бізнес-операцією
+- UI-зміни в `web` не повинні переносити бізнес-правила з `gateway`/`accounts`; там лишаються рендеринг, форма, валідація й запити до API
 
 ## Current Nuance
 
@@ -83,6 +90,7 @@ DTO виносяться в `libs/common/src/dto`.
 
 - Для локального attach-debug актуальним вважається `docker-compose.debug.yml`
 - Контейнери запускаються через `docker compose -f docker-compose.debug.yml up --build`
+- `web` слухає `3000` і в debug/compose режимі залежить від піднятого `gateway`
 - VS Code attach-конфіги в `.vscode/launch.json` підключаються до портів:
   - `gateway`: `9230`
   - `accounts`: `9231`

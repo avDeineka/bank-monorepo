@@ -14,6 +14,10 @@ The main goal for an agent here is to make targeted changes without silently bre
   - Proxies client requests into backend services.
   - Talks to `auth` and `accounts` over RabbitMQ.
   - Talks to `rater` over gRPC.
+- `apps/web`
+  - Public Next.js UI.
+  - Talks to `gateway` over HTTP.
+  - Uses SSR/browser-specific gateway URLs from environment config.
 - `apps/auth`
   - Registration, login, user profile, role changes.
   - Owns user-related data.
@@ -39,6 +43,7 @@ The main goal for an agent here is to make targeted changes without silently bre
   - producer
   - consumer
 - Do not add new internal account operations to `gateway` unless the task explicitly asks for public HTTP exposure.
+- Do not move domain rules into `web`; keep it to UI, validation, and request translation.
 - Keep orchestration concerns separate from core business operations when possible.
 - Preserve existing saga-like compensation flows unless the task explicitly changes domain behavior.
 
@@ -77,6 +82,7 @@ Local orchestration is defined in:
 
 Current infrastructure assumptions:
 
+- `web` is the public-facing Next.js app and runs on port `3000`
 - PostgreSQL
 - RabbitMQ
 - Redis
@@ -93,6 +99,9 @@ Important environment variables used in the repo:
 - `RATER_GRPC_URL`
 - `REDIS_URL`
 - `EXCHANGE_API_KEY`
+- `NEXT_PUBLIC_GATEWAY_URL`
+- `INTERNAL_GATEWAY_URL`
+- `FRONTEND_URL`
 
 If you introduce a new required env var:
 
@@ -108,12 +117,15 @@ Common commands:
 - `npm run build:debug`
 - `npm run test`
 - `npm run test:e2e`
+- `npm run start:web`
+- `npm run build:web`
 
 Notes:
 
 - `nest-cli.json` defines a monorepo with multiple apps and one shared library.
 - `build:debug` uses webpack and produces output layout that differs from the standard Nest build.
 - The debug Docker workflow is the canonical local attach-debug path.
+- `apps/web` is a Next.js app; its production image is built separately from Nest services.
 
 ## Debugging Conventions
 
@@ -153,6 +165,12 @@ Good default workflow:
 - Keep it thin.
 - Prefer validation, auth, role checks, and request translation here.
 - Avoid pushing account-domain logic into controllers.
+
+### `apps/web`
+
+- Keep it presentation-focused.
+- Use `gateway` for business actions instead of direct service coupling.
+- Keep SSR/browser URL handling explicit so Docker and local browser flows both work.
 
 ### `apps/auth`
 
